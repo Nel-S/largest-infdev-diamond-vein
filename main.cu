@@ -48,8 +48,8 @@ int main() {
 	for (int32_t i = 0; i < NUMBER_OF_DEVICES; ++i) threads[i] = std::thread(deviceManager, i);
 
 	if (STATUS_FREQUENCY.count()) {
-		// Wait until some progress is made, to avoid division by zero in ETA
-		while (!globalCurrentIteration) std::this_thread::sleep_for(std::chrono::seconds(3));
+		// Wait until some progress is made, to avoid division by zero in ETA and to get a more accurate estimate
+		while (!globalCurrentIteration) std::this_thread::sleep_for(std::chrono::seconds(10));
 
 		while (globalCurrentIteration < GLOBAL_ITERATIONS_NEEDED) {
 			time(&currentTime);

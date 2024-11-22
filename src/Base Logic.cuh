@@ -44,6 +44,7 @@ __host__ __device__ [[nodiscard]] constexpr int64_t constexprCeil(double x) noex
 __host__ __device__ [[nodiscard]] constexpr int64_t constexprRound(double x) noexcept {
 	return constexprFloor(x + 0.5);
 }
+
 /* Returns the compile-time factorial of a natural number.
    WARNING: this will overflow (and thus give results modulo 2^64 instead) for any value greater than 20.*/
 __host__ __device__ [[nodiscard]] constexpr uint64_t constexprFactorial(uint64_t n) noexcept {
@@ -87,6 +88,30 @@ __host__ __device__ [[nodiscard]] constexpr double constexprLog2(double x) noexc
 }
 
 constexpr double PI = 3.1415926535897932384626433;
+
+/* Returns a compile-time *approximation* of sin(x).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprSin(double x) {
+	// TODO: Standardize x between [-pi/2, pi/2]
+	double approximation = x, nextTerm = x;
+	for (uint64_t i = 1; i < 25; ++i) {
+		nextTerm *= -x/(2.*static_cast<double>(i))*x/(2.*static_cast<double>(i) + 1.);
+		approximation += nextTerm;
+	}
+	return approximation;
+}
+
+/* Returns a compile-time *approximation* of cos(x).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprCos(double x) {
+	// TODO: Standardize x between [-pi/2, pi/2]
+	double approximation = 1, nextTerm = 1;
+	for (uint64_t i = 1; i < 25; ++i) {
+		nextTerm *= -x/(2.*static_cast<double>(i) - 1.)*x/(2.*static_cast<double>(i));
+		approximation += nextTerm;
+	}
+	return approximation;
+}
+
+constexpr auto a = constexprCos(PI);
 
 /* =====================
    BIT-RELATED FUNCTIONS
@@ -211,6 +236,10 @@ struct Coordinate {
 	__host__ __device__ constexpr Coordinate() noexcept : x(), y(), z() {}
 	__host__ __device__ constexpr Coordinate(int32_t x, int32_t z) noexcept : x(x), y(), z(z) {}
 	__host__ __device__ constexpr Coordinate(int32_t x, int32_t y, int32_t z) noexcept : x(x), y(y), z(z) {}
+
+	__host__ __device__ constexpr [[nodiscard]] bool operator==(const Coordinate &other) const noexcept {
+		return this->y == other.y && this->z == other.z && this->x == other.x;
+	}
 };
 
 // An inclusive range of 32-bit integers.
@@ -221,16 +250,16 @@ template <class T> struct InclusiveRange {
 	// static constexpr T NO_MAXIMUM = INT32_MAX;
 
 	// __device__ constexpr InclusiveRange() noexcept : lowerBound(this->NO_MINIMUM), upperBound(this->NO_MAXIMUM), inverted() {}
-	__device__ constexpr InclusiveRange() noexcept : lowerBound(), upperBound(), inverted() {}
-	__device__ constexpr InclusiveRange(const InclusiveRange &other) noexcept : lowerBound(other.lowerBound), upperBound(other.upperBound), inverted(other.inverted) {}
-	__device__ constexpr InclusiveRange(const T &value, bool inverted = false) noexcept : lowerBound(value), upperBound(value), inverted(inverted) {}
-	__device__ constexpr InclusiveRange(const T &lowerBound, const T &upperBound, bool inverted = false) noexcept : lowerBound(constexprMin(lowerBound, upperBound)), upperBound(constexprMax(lowerBound, upperBound)), inverted(inverted) {}
+	__host__ __device__ constexpr InclusiveRange() noexcept : lowerBound(), upperBound(), inverted() {}
+	__host__ __device__ constexpr InclusiveRange(const InclusiveRange &other) noexcept : lowerBound(other.lowerBound), upperBound(other.upperBound), inverted(other.inverted) {}
+	__host__ __device__ constexpr InclusiveRange(const T &value, bool inverted = false) noexcept : lowerBound(value), upperBound(value), inverted(inverted) {}
+	__host__ __device__ constexpr InclusiveRange(const T &lowerBound, const T &upperBound, bool inverted = false) noexcept : lowerBound(constexprMin(lowerBound, upperBound)), upperBound(constexprMax(lowerBound, upperBound)), inverted(inverted) {}
 	// Initialize based on the intersection of two ranges.
 	// TODO: Implement inverted for this
-	// __device__ constexpr InclusiveRange(const InclusiveRange &range1, const InclusiveRange &range2) noexcept : lowerBound(constexprMax(range1.lowerBound, range2.lowerBound)), upperBound(constexprMin(range1.upperBound, range2.upperBound)) {}
+	// __host__ __device__ constexpr InclusiveRange(const InclusiveRange &range1, const InclusiveRange &range2) noexcept : lowerBound(constexprMax(range1.lowerBound, range2.lowerBound)), upperBound(constexprMin(range1.upperBound, range2.upperBound)) {}
 
 	// Returns if a value falls within the range.
-	__device__ [[nodiscard]] constexpr bool contains(const T &value) const noexcept {
+	__host__ __device__ [[nodiscard]] constexpr bool contains(const T &value) const noexcept {
 		return (this->lowerBound <= value && value <= this->upperBound) == !this->inverted;
 	}
 

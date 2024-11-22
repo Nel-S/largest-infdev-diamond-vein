@@ -1,191 +1,137 @@
-#include "../src/Base Logic.cuh"
+#include "../Allowed Values for Settings.cuh"
 
-__device__ constexpr VeinStates TRUE_VEIN_1_8_9__1[][10][6] = {
+// Internal state: 137298410352641 in chunk (48, -80) (block coordinates)
+__device__ constexpr InputData TEST_DATA_1_8_9__1 = {
+	Version::v1_8_9,
+	Material::Dirt,
+	{54, 47, -76},
+	{6, 6, 10}
+};
+__device__ constexpr VeinStates TEST_DATA_1_8_9__1_LAYOUT[][10][6] = {
 	{ // -y
-		// -x								+x
-		{Stone, Stone, Stone, Stone, Stone, Stone}, // -z
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}  // +z
+		// -x          +x
+		{_, _, _, _, _, _}, // -z
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, V, _, _},
+		{_, _, _, V, _, _},
+		{_, _, _, V, _, _},
+		{_, _, _, V, _, _},
+		{_, _, _, _, _, _}  // +z
 	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Vein,  Vein,  Stone}
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, V, V, _, _},
+		{_, V, V, V, _, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, _, V, V, _}
 	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Vein,  Vein,  Stone}
+		{_, _, _, _, _, _},
+		{_, V, V, V, _, _},
+		{_, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, V},
+		{_, V, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, _, V, V, _}
 	}, {
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}
+		{_, V, V, _, _, _},
+		{V, V, V, V, _, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, _, _, _, _}
 	}, {
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}
+		{_, V, V, _, _, _},
+		{_, V, V, V, _, _},
+		{V, V, V, V, _, _},
+		{V, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, _, V, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _}
 	}, {
-		// -x								+x
-		{Stone, Stone, Stone, Stone, Stone, Stone}, // -z
-		{Stone, Stone, Vein,  Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Stone, Stone},
-		{Stone, Stone, Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}  // +z
+		// -x          +x
+		{_, _, _, _, _, _}, // -z
+		{_, _, V, _, _, _},
+		{_, V, V, _, _, _},
+		{_, _, V, V, _, _},
+		{_, _, V, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _},
+		{_, _, _, _, _, _}  // +z
 	} // +y
 };
-__device__ constexpr struct Coordinate VEIN_COORDINATE_1_8_9__1 = {54, 47, -76};
 
 
-// Internal state: 8675309
-__device__ constexpr VeinStates TRUE_VEIN_1_8_9__2[][10][6] = {
-	{ // -y
-		// -x								+x
-		{Stone, Stone, Stone, Stone, Stone, Stone}, // -z
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}, // +z
-	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Stone, Vein,  Vein },
-	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Stone, Vein,  Vein },
-	}, {
-		{Vein,  Vein,  Stone, Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-	}, {
-		{Vein,  Vein,  Stone, Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone}
-	} // +y
+// Internal state: 4143116729266150203
+__device__ constexpr InputData TEST_DATA_1_8_9__2 = {
+	Version::v1_8_9,
+	Material::Dirt,
+	{68, 47, 89},
+	{6, 4, 10}
 };
-__device__ constexpr struct Coordinate VEIN_COORDINATE_1_8_9__2 = {53, 95, 83};
 
-
-
-// Internal state: 260269899193147 (CUDA offset = 8675309)
-__device__ constexpr VeinStates TRUE_VEIN_1_8_9__3[][6][10] = {
-	{ // -y
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Vein,  Vein,  Stone, Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone}
+__device__ constexpr VeinStates TEST_DATA_1_8_9__2_LAYOUT[][10][6] = {
+	{
+		{_, _, _, _, _, _},
+		{_, _, _, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, _, _},
+		{_, V, V, V, _, _},
+		{_, V, V, _, _, _},
+		{_, _, _, _, _, _}
 	}, {
-		{Stone, Stone, Vein,  Vein,  Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Stone, Stone, Stone, Vein,  Vein,  Vein,  Stone}
+		{_, _, _, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, _, _},
+		{V, V, V, V, _, _},
+		{V, V, V, _, _, _}
 	}, {
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein },
-		{Stone, Stone, Stone, Stone, Stone, Vein,  Vein,  Vein,  Vein,  Vein }
+		{_, _, _, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, _, V, V, V, V},
+		{_, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, V, _},
+		{V, V, V, V, _, _},
+		{V, V, V, V, _, _},
+		{V, V, V, _, _, _}
 	}, {
-		{Stone, Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone, Stone, Stone},
-		{Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone, Stone},
-		{Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Vein,  Vein,  Vein,  Vein,  Vein,  Vein,  Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone}
-	}, {
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Vein,  Vein,  Vein,  Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Vein,  Vein,  Stone, Vein,  Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone},
-		{Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone, Stone}
+		{_, _, _, _, _, _},
+		{_, _, _, V, V, _},
+		{_, _, V, V, V, _},
+		{_, _, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, V, _},
+		{_, V, V, V, _, _},
+		{_, V, V, V, _, _},
+		{_, V, V, _, _, _},
+		{_, _, _, _, _, _}
 	}
 };
-__device__ constexpr struct Coordinate VEIN_COORDINATE_1_8_9__3 = {54, -1, 87};

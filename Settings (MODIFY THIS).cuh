@@ -4,13 +4,11 @@
 /* To find what options are valid for the following settings, see the following file:*/
 #include "Allowed Values for Settings.cuh"
 #include "Test Data/1.8.9.cuh"
+#include <chrono>
 
 // The data to run the program on.
-// TODO: Bundle material, version, layout, and coordinates into a single struct
-constexpr Material MATERIAL = Material::Dirt;
-constexpr Version VERSION = Version::v1_8_9;
-#define TRUE_VEIN TRUE_VEIN_1_8_9__3
-#define VEIN_COORDINATE VEIN_COORDINATE_1_8_9__3
+#define INPUT_DATA TEST_DATA_1_8_9__1
+#define INPUT_DATA_LAYOUT TEST_DATA_1_8_9__1_LAYOUT
 
 /* The number of "parts" this program should be broken up into, for usage by PART_TO_START_FROM.*/
 constexpr uint64_t NUMBER_OF_PARTS = 1;
@@ -27,6 +25,9 @@ constexpr uint64_t WORKERS_PER_BLOCK = 256;
 /* To speed up the program, states are run through a series of filters that gradually decrease the list of candidates.
    This is the maximum number of results to store per each filter.*/
 constexpr uint64_t MAX_RESULTS_PER_FILTER = 200000000;
+/* If true,  will treat blocks outside the input layout as all stone, speeding the program up but returning fewer results.
+   If false, will treat blocks outside the input layout as unknown.*/
+constexpr bool TREAT_COORDINATES_OUTSIDE_INPUT_AS_STONE = true;
 // How frequently to print status updates.
 constexpr std::chrono::seconds STATUS_FREQUENCY = std::chrono::seconds(30);
 // const char *FILEPATH = "structure_seeds.txt";
@@ -35,7 +36,7 @@ constexpr std::chrono::seconds STATUS_FREQUENCY = std::chrono::seconds(30);
 
 // The range of viable angle nextFloat values.
 // TODO: Find a way to automatically calculate
-// constexpr InclusiveRange<float> ANGLE_BOUNDS(0.2905f, 0.7095f, true);
-__device__ constexpr InclusiveRange<float> ANGLE_BOUNDS(0.f, 1.f);
+__device__ constexpr InclusiveRange<float> ANGLE_BOUNDS(0.2905f, 0.7095f, true);
+// __device__ constexpr InclusiveRange<float> ANGLE_BOUNDS(0.f, 1.f);
 
 #endif
