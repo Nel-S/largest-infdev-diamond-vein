@@ -24,7 +24,7 @@ __global__ void filter1(const uint64_t iterationStateRangeStart, const size_t ch
 
 	// Test if a nextFloat() after that would return an angle within the range of possible angles. If not, abort.
 	float angle = random.nextFloat();
-	if (!ANGLE_BOUNDS.contains(angle)) return;
+	if (!ANGLE_BOUNDS.first.contains(angle) && !ANGLE_BOUNDS.second.contains(angle)) return;
 
 	// int32_t y1 = random.nextInt(3);
 	// int32_t y2 = random.nextInt(3);
@@ -42,7 +42,7 @@ __global__ void filter2(const size_t chunkIndex) {
 	if (storageArraySize <= arrayIndex) return;
 	uint64_t state = STORAGE_ARRAY[arrayIndex];
 
-	int32_t generationPointYOffset = static_cast<int32_t>(state >> BITS_LEFT_AFTER_Y);;
+	int32_t generationPointYOffset = static_cast<int32_t>(state >> BITS_LEFT_AFTER_Y);
 	Random random = Random().setState(state);
 	int32_t generationPointXOffset = random.nextInt<-1>(16);
 	int32_t generationPointZOffset = random.nextInt<2>(16);
@@ -50,22 +50,22 @@ __global__ void filter2(const size_t chunkIndex) {
 	int32_t y1 = random.nextInt(3);
 	int32_t y2 = random.nextInt(3);
 
-	// Calculate the indices in the vein array that correspond to the generation point.
-	struct Coordinate offsetInLayout = {
-		(CHUNKS_TO_EXAMINE.coordinates[chunkIndex].first  + 8*USE_POPULATION_OFFSET + generationPointXOffset) - NARROWED_INPUT_COORDINATE.x,
-		(VEIN_RANGE.lowerBound + generationPointYOffset) - NARROWED_INPUT_COORDINATE.y,
-		(CHUNKS_TO_EXAMINE.coordinates[chunkIndex].second + 8*USE_POPULATION_OFFSET + generationPointZOffset) - NARROWED_INPUT_COORDINATE.z
-	};
-	// Coordinate veinGenerationPoint = {
-	// 	CHUNKS_TO_EXAMINE.coordinates[chunkIndex].first  + 8*USE_POPULATION_OFFSET + generationPointXOffset,
-	// 	VEIN_RANGE.lowerBound + generationPointYOffset,
-	// 	CHUNKS_TO_EXAMINE.coordinates[chunkIndex].second + 8*USE_POPULATION_OFFSET + generationPointZOffset
+	// Calculate the indices in the input layout that correspond to the generation point.
+	// Coordinate offsetInInputLayout = {
+	// 	(16*CHUNKS_TO_EXAMINE.coordinates[chunkIndex].first  + 8*USE_POPULATION_OFFSET + generationPointXOffset) - INPUT_DATA.coordinate.x,
+	// 	(VEIN_RANGE.lowerBound + generationPointYOffset) - INPUT_DATA.coordinate.y,
+	// 	(16*CHUNKS_TO_EXAMINE.coordinates[chunkIndex].second + 8*USE_POPULATION_OFFSET + generationPointZOffset) - INPUT_DATA.coordinate.z
 	// };
+	Coordinate veinGenerationPoint = {
+		16*CHUNKS_TO_EXAMINE.coordinates[chunkIndex].first  + 8*USE_POPULATION_OFFSET + generationPointXOffset,
+		VEIN_RANGE.lowerBound + generationPointYOffset,
+		16*CHUNKS_TO_EXAMINE.coordinates[chunkIndex].second + 8*USE_POPULATION_OFFSET + generationPointZOffset
+	};
 	// Initialize emulated vein
-	VeinStates currentVein[NARROWED_INPUT_DIMENSIONS.y][NARROWED_INPUT_DIMENSIONS.z][NARROWED_INPUT_DIMENSIONS.x];
-	for (int32_t y = 0; y < NARROWED_INPUT_DIMENSIONS.y; ++y) {
-		for (int32_t z = 0; z < NARROWED_INPUT_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < NARROWED_INPUT_DIMENSIONS.x; ++x) currentVein[y][z][x] = VeinStates::Stone;
+	VeinStates currentVein[INPUT_DIMENSIONS.y][INPUT_DIMENSIONS.z][INPUT_DIMENSIONS.x];
+	for (int32_t y = 0; y < INPUT_DIMENSIONS.y; ++y) {
+		for (int32_t z = 0; z < INPUT_DIMENSIONS.z; ++z) {
+			for (int32_t x = 0; x < INPUT_DIMENSIONS.x; ++x) currentVein[y][z][x] = VeinStates::Stone;
 		}
 	}
 
@@ -73,41 +73,48 @@ __global__ void filter2(const size_t chunkIndex) {
 	angle *= PI;
 	double maxX = sin(angle)*static_cast<double>(VEIN_SIZE)/8.;
 	double maxZ = cos(angle)*static_cast<double>(VEIN_SIZE)/8.;
-	for (int32_t k = 0; k < VEIN_SIZE + (INPUT_DATA.version == ExperimentalVersion::v1_7_9); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (INPUT_DATA.version <= Version::v1_7_through_v1_7_10); ++k) {
 		double interpoland = static_cast<double>(k)/static_cast<double>(VEIN_SIZE);
 		// Linearly interpolates between -sin(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8.; y1 and y2; and -cos(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8..
-		double xInterpolation = maxX*(1. - 2.*interpoland);
-		double yInterpolation = static_cast<double>(y1) + static_cast<double>(y2 - y1) * interpoland - 2;
-		double zInterpolation = maxZ*(1. - 2.*interpoland);
-		double maxRadiusSqrt = (sin(PI*interpoland) + 1.)*static_cast<double>(VEIN_SIZE)/32.*random.nextDouble() + 0.5;
-		double maxRadius = maxRadiusSqrt*maxRadiusSqrt;
+		double xInterpolation = static_cast<double>(veinGenerationPoint.x) + maxX*(1. - 2.*interpoland);
+		double yInterpolation = static_cast<double>(veinGenerationPoint.y) + static_cast<double>(y1) + static_cast<double>(y2 - y1) * interpoland + (INPUT_DATA.version <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2);
+		double zInterpolation = static_cast<double>(veinGenerationPoint.z) + maxZ*(1. - 2.*interpoland);
+		double maxRadius = (sin(PI*interpoland) + 1.)*static_cast<double>(VEIN_SIZE)/32.*random.nextDouble() + 0.5;
+		double maxRadiusSquared = maxRadius*maxRadius;
 
-		for (int32_t xOffset = static_cast<int32_t>(floor(xInterpolation - maxRadiusSqrt)); xOffset <= static_cast<int32_t>(floor(xInterpolation + maxRadiusSqrt)); ++xOffset) {
-			double vectorX = static_cast<double>(xOffset) + 0.5 - xInterpolation;
+		int32_t xStart = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation - maxRadius : floor(xInterpolation - maxRadius));
+		int32_t xEnd   = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation + maxRadius : floor(xInterpolation + maxRadius));
+		int32_t yStart = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation - maxRadius : floor(yInterpolation - maxRadius));
+		int32_t yEnd   = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation + maxRadius : floor(yInterpolation + maxRadius));
+		int32_t zStart = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation - maxRadius : floor(zInterpolation - maxRadius));
+		int32_t zEnd   = static_cast<int32_t>(INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation + maxRadius : floor(zInterpolation + maxRadius));
+
+		for (int32_t x = xStart; x <= xEnd; ++x) {
+			double vectorX = static_cast<double>(x) + 0.5 - xInterpolation;
 			double vectorXsquared = vectorX*vectorX;
-			if (vectorXsquared >= maxRadius) continue;
-			for (int32_t yOffset = static_cast<int32_t>(floor(yInterpolation - maxRadiusSqrt)); yOffset <= static_cast<int32_t>(floor(yInterpolation + maxRadiusSqrt)); ++yOffset) {
-				double vectorY = static_cast<double>(yOffset) + 0.5 - yInterpolation;
+			if (vectorXsquared >= maxRadiusSquared) continue;
+			for (int32_t y = yStart; y <= yEnd; ++y) {
+				double vectorY = static_cast<double>(y) + 0.5 - yInterpolation;
 				double vectorYsquared = vectorY*vectorY;
-				if (vectorXsquared + vectorYsquared >= maxRadius) continue;
- 				for (int32_t zOffset = static_cast<int32_t>(floor(zInterpolation - maxRadiusSqrt)); zOffset <= static_cast<int32_t>(floor(zInterpolation + maxRadiusSqrt)); ++zOffset) {
-					double vectorZ = static_cast<double>(zOffset) + 0.5 - zInterpolation;
+				if (vectorXsquared + vectorYsquared >= maxRadiusSquared) continue;
+ 				for (int32_t z = zStart; z <= zEnd; ++z) {
+					double vectorZ = static_cast<double>(z) + 0.5 - zInterpolation;
 					double vectorZsquared = vectorZ*vectorZ;
-					if (vectorXsquared + vectorYsquared + vectorZsquared >= maxRadius) continue;
+					if (vectorXsquared + vectorYsquared + vectorZsquared >= maxRadiusSquared) continue;
 
 					// Calculate equivalent coordinate within layout
-					int32_t x = xOffset + offsetInLayout.x;
-					int32_t y = yOffset + offsetInLayout.y;
-					int32_t z = zOffset + offsetInLayout.z;
+					int32_t xIndex = x - INPUT_DATA.coordinate.x;
+					int32_t yIndex = y - INPUT_DATA.coordinate.y;
+					int32_t zIndex = z - INPUT_DATA.coordinate.z;
 					// If that coordinate would fall outside the layout's bounds:
-					if (x < 0 || NARROWED_INPUT_DIMENSIONS.x <= x || y < 0 || NARROWED_INPUT_DIMENSIONS.y <= y || z < 0 || NARROWED_INPUT_DIMENSIONS.z <= z) {
-						// Abort if acting as stone, otherwise ignore (if treating as unknown)
+					if (xIndex < 0 || INPUT_DIMENSIONS.x <= xIndex || yIndex < 0 || INPUT_DIMENSIONS.y <= yIndex || zIndex < 0 || INPUT_DIMENSIONS.z <= zIndex) {
+						// Quit if acting as stone, otherwise ignore (if treating as unknown)
 						if (TREAT_COORDINATES_OUTSIDE_INPUT_AS_STONE) return;
 					} else {
-						// Otherwise if it does fall within the grid, but the input data differs, abort
-						if (INPUT_DATA_LAYOUT[y][z][x] == VeinStates::Stone) return;
+						// Otherwise if it does fall within the layout's bounds, but the input data differs, quit
+						if (inputLayoutCopy.copy[yIndex][zIndex][xIndex] == VeinStates::Stone) return;
 						// Otherwise add to current vein
-						currentVein[y][z][x] = VeinStates::Vein;
+						currentVein[yIndex][zIndex][xIndex] = VeinStates::Vein;
 					}
 				}
 			}
@@ -115,10 +122,10 @@ __global__ void filter2(const size_t chunkIndex) {
 	}
 
 	// Make sure current vein and input vein are identical, and abort if not
-	for (int32_t y = 0; y < NARROWED_INPUT_DIMENSIONS.y; ++y) {
-		for (int32_t z = 0; z < NARROWED_INPUT_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < NARROWED_INPUT_DIMENSIONS.x; ++x) {
-				if (INPUT_DATA_LAYOUT[y][z][x] != VeinStates::Unknown && INPUT_DATA_LAYOUT[y][z][x] != currentVein[y][z][x]) return;
+	for (int32_t y = 0; y < INPUT_DIMENSIONS.y; ++y) {
+		for (int32_t z = 0; z < INPUT_DIMENSIONS.z; ++z) {
+			for (int32_t x = 0; x < INPUT_DIMENSIONS.x; ++x) {
+				if (inputLayoutCopy.copy[y][z][x] != VeinStates::Unknown && inputLayoutCopy.copy[y][z][x] != currentVein[y][z][x]) return;
 			}
 		}
 	}
@@ -127,6 +134,7 @@ __global__ void filter2(const size_t chunkIndex) {
 	random = Random().setState(state);
 	random.skip<-2>();
 	// Then print result
+	// TODO: Convert to storing results in an array, so they can be printed to a file if desired
 	printf("\t%" PRIu64 "\t(%" PRId32 ", %" PRId32 ")\n", random.state, CHUNKS_TO_EXAMINE.coordinates[chunkIndex].first, CHUNKS_TO_EXAMINE.coordinates[chunkIndex].second);
 }
 

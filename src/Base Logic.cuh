@@ -255,8 +255,9 @@ template <class T> struct InclusiveRange {
 	__host__ __device__ constexpr InclusiveRange(const T &value, bool inverted = false) noexcept : lowerBound(value), upperBound(value), inverted(inverted) {}
 	__host__ __device__ constexpr InclusiveRange(const T &lowerBound, const T &upperBound, bool inverted = false) noexcept : lowerBound(constexprMin(lowerBound, upperBound)), upperBound(constexprMax(lowerBound, upperBound)), inverted(inverted) {}
 	// Initialize based on the intersection of two ranges.
-	// TODO: Implement inverted for this
-	// __host__ __device__ constexpr InclusiveRange(const InclusiveRange &range1, const InclusiveRange &range2) noexcept : lowerBound(constexprMax(range1.lowerBound, range2.lowerBound)), upperBound(constexprMin(range1.upperBound, range2.upperBound)) {}
+	__host__ __device__ constexpr InclusiveRange(const InclusiveRange &range1, const InclusiveRange &range2) : lowerBound(range1.inverted ? constexprMin(range1.lowerBound, range2.lowerBound) : constexprMax(range1.lowerBound, range2.lowerBound)), upperBound(inverted ? constexprMax(range1.upperBound, range2.upperBound) : constexprMin(range1.upperBound, range2.upperBound)) {
+		if (range1.inverted != range2.inverted) throw std::invalid_argument("Two ranges with opposite inverted states cannot have their intersection taken.");
+	}
 
 	// Returns if a value falls within the range.
 	__host__ __device__ [[nodiscard]] constexpr bool contains(const T &value) const noexcept {

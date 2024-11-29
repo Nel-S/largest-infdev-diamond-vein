@@ -4,129 +4,155 @@
 #include "..\Settings (MODIFY THIS).cuh"
 #include "Veins Logic.cuh"
 
-// constexpr bool isInputLayoutPortionFully(const VeinStates state, const Pair<Coordinate> &rangeToCheck) {
-// 	for (size_t y = rangeToCheck.first.y; y <= rangeToCheck.second.y; ++y) {
-// 		for (size_t z = rangeToCheck.first.z; z <= rangeToCheck.second.z; ++z) {
-// 			for (size_t x = rangeToCheck.first.x; x <= rangeToCheck.second.x; ++x) {
-// 				if (INPUT_DATA_LAYOUT[y][z][x] != state) return false;
-// 			}
-// 		}
-// 	}
-// 	return true;
-// }
-
-// constexpr Pair<Coordinate> getInputVeinBoundingBox() {
-// 	Pair<Coordinate> range = {{0, 0, 0}, {INPUT_DATA.layoutDimensions.x - 1, INPUT_DATA.layoutDimensions.y - 1, INPUT_DATA.layoutDimensions.z - 1}};
-
-// 	// Reduce -x edge if the plane is entirely stone
-// 	int32_t savedMaxX = range.second.x;
-// 	for (; range.first.x <= savedMaxX; ++range.first.x) {
-// 		range.second.x = range.first.x;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.second.x = savedMaxX;
-// 	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
-
-// 	// Reduce +x edge if the plane is entirely stone
-// 	int32_t savedMinX = range.first.x;
-// 	for (; savedMinX <= range.second.x; --range.second.x) {
-// 		range.first.x = range.second.x;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.first.x = savedMinX;
-// 	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
-
-// 	// Reduce -y edge if the plane is entirely stone
-// 	int32_t savedMaxY = range.second.y;
-// 	for (; range.first.y <= savedMaxY; ++range.first.y) {
-// 		range.second.y = range.first.y;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.second.y = savedMaxY;
-// 	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
-
-// 	// Reduce +y edge if the plane is entirely stone
-// 	int32_t savedMinY = range.first.y;
-// 	for (; savedMinY <= range.second.y; --range.second.y) {
-// 		range.first.y = range.second.y;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.first.y = savedMinY;
-// 	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
-
-// 	// Reduce -z edge if the plane is entirely stone
-// 	int32_t savedMaxZ = range.second.z;
-// 	for (; range.first.z <= savedMaxZ; ++range.first.z) {
-// 		range.second.z = range.first.z;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.second.z = savedMaxZ;
-// 	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid z-dimension was specified.");
-
-
-// 	// Reduce +z edge if the plane is entirely stone
-// 	int32_t savedMinZ = range.first.z;
-// 	for (; savedMinZ <= range.second.z; --range.second.z) {
-// 		range.first.z = range.second.z;
-// 		if (!isInputLayoutPortionFully(VeinStates::Stone, range)) break;
-// 	}
-// 	range.first.z = savedMinZ;
-// 	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
-
-// 	// Return resultant range
-// 	return range;
-// }
-
-// constexpr Pair<Coordinate> INPUT_VEIN_BOUNDING_BOX = getInputVeinBoundingBox();
-// constexpr Coordinate NARROWED_INPUT_COORDINATE = {
-// 	INPUT_DATA.coordinate.x + INPUT_VEIN_BOUNDING_BOX.first.x,
-// 	INPUT_DATA.coordinate.y + INPUT_VEIN_BOUNDING_BOX.first.y,
-// 	INPUT_DATA.coordinate.z + INPUT_VEIN_BOUNDING_BOX.first.z
-// };
-// constexpr Coordinate NARROWED_INPUT_DIMENSIONS = {
-// 	INPUT_VEIN_BOUNDING_BOX.second.x - INPUT_VEIN_BOUNDING_BOX.first.x + 1,
-// 	INPUT_VEIN_BOUNDING_BOX.second.y - INPUT_VEIN_BOUNDING_BOX.first.y + 1,
-// 	INPUT_VEIN_BOUNDING_BOX.second.z - INPUT_VEIN_BOUNDING_BOX.first.z + 1
-// };
-constexpr Coordinate NARROWED_INPUT_COORDINATE = INPUT_DATA.coordinate;
-constexpr Coordinate NARROWED_INPUT_DIMENSIONS = {
-	constexprMin(INPUT_DATA.layoutDimensions.x, static_cast<int32_t>(sizeof(**INPUT_DATA_LAYOUT)/sizeof(***INPUT_DATA_LAYOUT))),
-	constexprMin(INPUT_DATA.layoutDimensions.y, static_cast<int32_t>(sizeof(  INPUT_DATA_LAYOUT)/sizeof(  *INPUT_DATA_LAYOUT))),
-	constexprMin(INPUT_DATA.layoutDimensions.z, static_cast<int32_t>(sizeof( *INPUT_DATA_LAYOUT)/sizeof( **INPUT_DATA_LAYOUT)))
+// Shorthand for input dimensions, which are referenced often
+constexpr Coordinate INPUT_DIMENSIONS = {
+	static_cast<int32_t>(sizeof(**INPUT_DATA_LAYOUT)/sizeof(***INPUT_DATA_LAYOUT)),
+	static_cast<int32_t>(sizeof(  INPUT_DATA_LAYOUT)/sizeof(  *INPUT_DATA_LAYOUT)),
+	static_cast<int32_t>(sizeof( *INPUT_DATA_LAYOUT)/sizeof( **INPUT_DATA_LAYOUT))
 };
 
 
-// TODO: Will ultimately be replaced with INPUT_DATA.version <= v1.12.2
-constexpr bool USE_POPULATION_OFFSET = true;
+/* Makes a device-side copy of the input layout.
+   	This is because the input layout needs to be read by both host code and device code,
+   	and a __managed__ or __constant__ variable can't be set as constexpr.
+   From Google's AI Overview*/
+template <size_t Y, size_t Z, size_t X> struct InputLayoutCopy {
+	VeinStates copy[Y][Z][X];
+	__host__ __device__ constexpr InputLayoutCopy() : copy() {
+		for (int32_t y = 0; y < Y; ++y) {
+			for (int32_t z = 0; z < Z; ++z) {
+				for (int32_t x = 0; x < X; ++x) copy[y][z][x] = INPUT_DATA_LAYOUT[y][z][x];
+			}
+		}
+	}
+};
 
-constexpr Pair<Coordinate> WORLD_BOUNDS = getWorldBounds(INPUT_DATA.version);
-// Ensure the vein falls within the boundaries of the world
-// static_assert(WORLD_BOUNDS.first.x <= INPUT_DATA.x && INPUT_DATA.x + INPUT_DATA.layoutDimensions.x - 1 <= WORLD_BOUNDS.second.x, "Error: Data stretches beyond the world's boundaries in the x-direction.");
-// static_assert(WORLD_BOUNDS.first.y <= INPUT_DATA.y && INPUT_DATA.y + INPUT_DATA.layoutDimensions.y - 1 <= WORLD_BOUNDS.second.y, "Error: Data stretches beyond the world's boundaries in the y-direction.");
-// static_assert(WORLD_BOUNDS.first.z <= INPUT_DATA.z && INPUT_DATA.z + INPUT_DATA.layoutDimensions.z - 1 <= WORLD_BOUNDS.second.z, "Error: Data stretches beyond the world's boundaries in the z-direction.");
+__device__ constexpr InputLayoutCopy<INPUT_DIMENSIONS.y, INPUT_DIMENSIONS.z, INPUT_DIMENSIONS.x> inputLayoutCopy;
+
+
+// Returns whether the given region of the input data contains a specified state.
+constexpr bool inputLayoutPortionContains(const VeinStates state, const Pair<Coordinate> &rangeToCheck) {
+	for (size_t y = rangeToCheck.first.y; y <= rangeToCheck.second.y; ++y) {
+		for (size_t z = rangeToCheck.first.z; z <= rangeToCheck.second.z; ++z) {
+			for (size_t x = rangeToCheck.first.x; x <= rangeToCheck.second.x; ++x) {
+				if (INPUT_DATA_LAYOUT[y][z][x] == state) return true;
+			}
+		}
+	}
+	return false;
+}
+
+/* Returns a bounding box around the portion of the input layout consisting of the vein itself.
+   Raises an exception if no vein blocks were specified in the input layout.*/
+constexpr Pair<Coordinate> getInputVeinBoundingBox() {
+	// Initial bounding box consists of the entire input layout
+	Pair<Coordinate> range = {{0, 0, 0}, {INPUT_DIMENSIONS.x - 1, INPUT_DIMENSIONS.y - 1, INPUT_DIMENSIONS.z - 1}};
+
+	// Reduce -x edge if that plane is entirely stone
+	int32_t savedMaxX = range.second.x;
+	for (; range.first.x <= savedMaxX; ++range.first.x) {
+		range.second.x = range.first.x;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.second.x = savedMaxX;
+	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
+
+	// Reduce +x edge if that plane is entirely stone
+	int32_t savedMinX = range.first.x;
+	for (; savedMinX <= range.second.x; --range.second.x) {
+		range.first.x = range.second.x;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.first.x = savedMinX;
+	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
+
+	// Reduce -y edge if that plane is entirely stone
+	int32_t savedMaxY = range.second.y;
+	for (; range.first.y <= savedMaxY; ++range.first.y) {
+		range.second.y = range.first.y;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.second.y = savedMaxY;
+	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
+
+	// Reduce +y edge if that plane is entirely stone
+	int32_t savedMinY = range.first.y;
+	for (; savedMinY <= range.second.y; --range.second.y) {
+		range.first.y = range.second.y;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.first.y = savedMinY;
+	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
+
+	// Reduce -z edge if that plane is entirely stone
+	int32_t savedMaxZ = range.second.z;
+	for (; range.first.z <= savedMaxZ; ++range.first.z) {
+		range.second.z = range.first.z;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.second.z = savedMaxZ;
+	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid z-dimension was specified.");
+
+
+	// Reduce +z edge if that plane is entirely stone
+	int32_t savedMinZ = range.first.z;
+	for (; savedMinZ <= range.second.z; --range.second.z) {
+		range.first.z = range.second.z;
+		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+	}
+	range.first.z = savedMinZ;
+	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
+
+	// Return resultant range
+	return range;
+}
+
+constexpr Pair<Coordinate> INPUT_VEIN_BOUNDING_BOX = getInputVeinBoundingBox();
+// The coordinate corresponding to the -x/-y/-z corner of the vein's bounding box.
+constexpr Coordinate KNOWN_VEIN_INPUT_COORDINATE = {
+	INPUT_DATA.coordinate.x + INPUT_VEIN_BOUNDING_BOX.first.x,
+	INPUT_DATA.coordinate.y + INPUT_VEIN_BOUNDING_BOX.first.y,
+	INPUT_DATA.coordinate.z + INPUT_VEIN_BOUNDING_BOX.first.z
+};
+// The dimensions of the vein's bounding box.
+constexpr Coordinate KNOWN_VEIN_INPUT_DIMENSIONS = {
+	INPUT_VEIN_BOUNDING_BOX.second.x - INPUT_VEIN_BOUNDING_BOX.first.x + 1,
+	INPUT_VEIN_BOUNDING_BOX.second.y - INPUT_VEIN_BOUNDING_BOX.first.y + 1,
+	INPUT_VEIN_BOUNDING_BOX.second.z - INPUT_VEIN_BOUNDING_BOX.first.z + 1
+};
+static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.x && KNOWN_VEIN_INPUT_DIMENSIONS.x <= INPUT_DIMENSIONS.x, "Data results in an impossible vein bounding box in the x-direction.");
+static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.y && KNOWN_VEIN_INPUT_DIMENSIONS.y <= INPUT_DIMENSIONS.y, "Data results in an impossible vein bounding box in the y-direction.");
+static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.z && KNOWN_VEIN_INPUT_DIMENSIONS.z <= INPUT_DIMENSIONS.z, "Data results in an impossible vein bounding box in the z-direction.");
+
+
+constexpr bool USE_POPULATION_OFFSET = INPUT_DATA.version <= Version::v1_8_through_v1_12_2;
+
+constexpr InclusiveRange<int32_t> Y_BOUNDS = getYBounds(INPUT_DATA.version);
 
 constexpr int32_t VEIN_SIZE = getVeinSize(INPUT_DATA.material, INPUT_DATA.version);
 constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinRange(INPUT_DATA.material, INPUT_DATA.version);
+static_assert(!((VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound) & (VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound - 1)), "Features with non-power-of-two ranges are not yet supported.");
 constexpr Pair<Coordinate> MAX_VEIN_BLOCK_DISPLACEMENT = getMaxVeinBlockDisplacement(INPUT_DATA.material, INPUT_DATA.version);
 constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(INPUT_DATA.material, INPUT_DATA.version);
+static_assert(!VEIN_USES_TRIANGULAR_DISTRIBUTION, "Features with triangular distributions are not yet supported.");
 
 // The bounding box the generation point can lay within, based on the dimensions of the vein alone.
 __device__ constexpr Pair<Coordinate> VEIN_GENERATION_POINT_BOUNDING_BOX = {
 	{
-		NARROWED_INPUT_COORDINATE.x + (NARROWED_INPUT_DIMENSIONS.x - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.x,
-		// The generation point can't lie below the vein's lower generation point range, nor the minimum y-coordinate
-		constexprMax(constexprMax(NARROWED_INPUT_COORDINATE.y + (NARROWED_INPUT_DIMENSIONS.y - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.y, VEIN_RANGE.lowerBound - VEIN_RANGE.upperBound*VEIN_USES_TRIANGULAR_DISTRIBUTION), WORLD_BOUNDS.first.y),
-		NARROWED_INPUT_COORDINATE.z + (NARROWED_INPUT_DIMENSIONS.z - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.z
+		KNOWN_VEIN_INPUT_COORDINATE.x + (KNOWN_VEIN_INPUT_DIMENSIONS.x - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.x,
+		// The generation point can't lie below the vein's lower generation point range
+		constexprMax(KNOWN_VEIN_INPUT_COORDINATE.y + (KNOWN_VEIN_INPUT_DIMENSIONS.y - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.y, VEIN_RANGE.lowerBound - VEIN_RANGE.upperBound*VEIN_USES_TRIANGULAR_DISTRIBUTION),
+		KNOWN_VEIN_INPUT_COORDINATE.z + (KNOWN_VEIN_INPUT_DIMENSIONS.z - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.z
 	}, {
-		NARROWED_INPUT_COORDINATE.x - MAX_VEIN_BLOCK_DISPLACEMENT.first.x,
-		// The generation point can't lie above the vein's maximum generation point range, nor the maximum y-coordinate
-		constexprMin(constexprMin(NARROWED_INPUT_COORDINATE.y - MAX_VEIN_BLOCK_DISPLACEMENT.first.y, VEIN_RANGE.upperBound + (VEIN_RANGE.lowerBound - 2)*VEIN_USES_TRIANGULAR_DISTRIBUTION), WORLD_BOUNDS.second.y),
-		NARROWED_INPUT_COORDINATE.z - MAX_VEIN_BLOCK_DISPLACEMENT.first.z
+		KNOWN_VEIN_INPUT_COORDINATE.x - MAX_VEIN_BLOCK_DISPLACEMENT.first.x,
+		// The generation point can't lie above the vein's maximum generation point range
+		constexprMin(KNOWN_VEIN_INPUT_COORDINATE.y - MAX_VEIN_BLOCK_DISPLACEMENT.first.y, VEIN_RANGE.upperBound + (VEIN_RANGE.lowerBound - 2)*VEIN_USES_TRIANGULAR_DISTRIBUTION),
+		KNOWN_VEIN_INPUT_COORDINATE.z - MAX_VEIN_BLOCK_DISPLACEMENT.first.z
 	}
 };
-static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.x <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.x, "Error: Data results in an impossible generation point bounding box in the x-direction.");
-static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.y <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.y, "Error: Data results in an impossible generation point bounding box in the y-direction.");
-static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.z <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.z, "Error: Data results in an impossible generation point bounding box in the z-direction.");
+static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.x <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.x, "Data results in an impossible generation point bounding box in the x-direction.");
+static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.y <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.y, "Data results in an impossible generation point bounding box in the y-direction.");
+static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.z <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.z, "Data results in an impossible generation point bounding box in the z-direction.");
 
 // The number of possible chunks that could have originally generated the vein.
 constexpr Pair<int32_t> NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS = {
@@ -139,29 +165,29 @@ static_assert(1 <= NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS.second, "Error: Data results
 static_assert(1 <= TOTAL_NUMBER_OF_POSSIBLE_CHUNKS, "Error: Data results in an impossible number of possible origin chunks.");
 
 struct ChunksToExamine {
-	// The (block) coordinates of each possible origin chunk.
+	// The (chunk) coordinates of each possible origin chunk.
 	Pair<int32_t> coordinates[TOTAL_NUMBER_OF_POSSIBLE_CHUNKS];
 	// The range of possible nextInt values for the x-, y-, and z-directions if the vein had originated in that chunk.
 	Pair<Coordinate> generationPointNextIntRanges[TOTAL_NUMBER_OF_POSSIBLE_CHUNKS];
 	
 	constexpr ChunksToExamine() : coordinates(), generationPointNextIntRanges() {
 		for (int32_t i = 0; i < TOTAL_NUMBER_OF_POSSIBLE_CHUNKS; ++i) {
-			coordinates[i] = {
-				16*(((VEIN_GENERATION_POINT_BOUNDING_BOX.first.x - 8*USE_POPULATION_OFFSET) >> 4) + (i % NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS.first)),
-				16*(((VEIN_GENERATION_POINT_BOUNDING_BOX.first.z - 8*USE_POPULATION_OFFSET) >> 4) + (i / NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS.first))
+			this->coordinates[i] = {
+				((VEIN_GENERATION_POINT_BOUNDING_BOX.first.x - 8*USE_POPULATION_OFFSET) >> 4) + (i % NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS.first),
+				((VEIN_GENERATION_POINT_BOUNDING_BOX.first.z - 8*USE_POPULATION_OFFSET) >> 4) + (i / NUMBER_OF_POSSIBLE_ORIGIN_CHUNKS.first)
 			};
-			generationPointNextIntRanges[i] = {
+			this->generationPointNextIntRanges[i] = {
 				{
-					constexprMax((VEIN_GENERATION_POINT_BOUNDING_BOX.first.x - 8*USE_POPULATION_OFFSET) - coordinates[i].first, 0),
+					constexprMax((VEIN_GENERATION_POINT_BOUNDING_BOX.first.x - 8*USE_POPULATION_OFFSET) - 16*this->coordinates[i].first, 0),
 					// y-bound was already capped when calculating the original bounding box
 					VEIN_GENERATION_POINT_BOUNDING_BOX.first.y,
-					constexprMax((VEIN_GENERATION_POINT_BOUNDING_BOX.first.z - 8*USE_POPULATION_OFFSET) - coordinates[i].second, 0)
+					constexprMax((VEIN_GENERATION_POINT_BOUNDING_BOX.first.z - 8*USE_POPULATION_OFFSET) - 16*this->coordinates[i].second, 0)
 				},
 				{
-					constexprMin((VEIN_GENERATION_POINT_BOUNDING_BOX.second.x - 8*USE_POPULATION_OFFSET) - coordinates[i].first, 15),
+					constexprMin((VEIN_GENERATION_POINT_BOUNDING_BOX.second.x - 8*USE_POPULATION_OFFSET) - 16*this->coordinates[i].first, 15),
 					// y-bound was already capped when calculating the original bounding box
 					VEIN_GENERATION_POINT_BOUNDING_BOX.second.y,
-					constexprMin((VEIN_GENERATION_POINT_BOUNDING_BOX.second.z - 8*USE_POPULATION_OFFSET) - coordinates[i].second, 15)
+					constexprMin((VEIN_GENERATION_POINT_BOUNDING_BOX.second.z - 8*USE_POPULATION_OFFSET) - 16*this->coordinates[i].second, 15)
 				}
 			};
 		}

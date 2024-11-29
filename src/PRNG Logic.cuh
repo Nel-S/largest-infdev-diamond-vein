@@ -2,6 +2,7 @@
 #define __PRNG_CUH
 
 #include "Base Logic.cuh"
+#include <set>
 
 struct LCG {
 	static constexpr uint64_t MULTIPLIER = UINT64_C(0x5deece66d);
@@ -51,8 +52,9 @@ struct Random {
 	}
 
 	// Initialize a Random instance using a given seed.
-	__host__ __device__ void setSeed(uint64_t seed) noexcept {
+	__host__ __device__ Random setSeed(uint64_t seed) noexcept {
 		this->state = (seed ^ LCG::MULTIPLIER) & LCG::MASK;
+		return *this;
 	}
 	// TODO: Convert bool to use Version
 	__host__ __device__ uint64_t setPopulationSeed(uint64_t worldSeed, int32_t x, int32_t z, bool post1_12 = true) noexcept {
@@ -222,22 +224,19 @@ struct Random {
 	}
 
 	/* Derives up to maxResults randomly-generatable worldseeds with a given structure seed and stores them in array. Returns their count.*/
-	// TODO: Verify correctness
-	// TODO: Find maximum number possible
-	__device__ static constexpr uint32_t getRandomSeedsFromStructureSeed(uint64_t structureSeed, size_t maxResults, uint64_t *array) noexcept {
-		structureSeed &= LCG::MASK;
-		uint32_t arrayLength = 0;
-		uint64_t prevStateUpperBits = (structureSeed << 16) * 246154705703781 + 107048004364969; // Technically should be ANDed with LCG::MASK, but since prevState performs the AND anyways there's no point
-		for (uint64_t lower16Bits = 0; lower16Bits < 65536; ++lower16Bits) {
-			uint64_t prevState = (prevStateUpperBits + lower16Bits * 246154705703781) & LCG::MASK;
-			if ((prevState >> 16) & 0xffff == structureSeed >> 32) {
-				arrayLength = atomicAdd(reinterpret_cast<unsigned long long *>(array), 1);
-				if (arrayLength >= maxResults) break;
-				array[arrayLength] = ((prevState & 0xffff00000000) << 16) + structureSeed;
-			}
-		}
-		return arrayLength;
-	}
+	// TODO: Not correct
+	// [[nodiscard]] std::set<uint64_t> getRandomSeedsFromStructureSeed(uint64_t structureSeed) noexcept {
+	// 	structureSeed &= LCG::MASK;
+	// 	std::set<uint64_t> set;
+	// 	uint64_t prevStateUpperBits = (structureSeed << 16) * 246154705703781 + 107048004364969; // Technically should be ANDed with LCG::MASK, but since prevState performs the AND anyways there's no point
+	// 	for (uint64_t lower16Bits = 0; lower16Bits < 65536; ++lower16Bits) {
+	// 		uint64_t prevState = (prevStateUpperBits + lower16Bits * 246154705703781) & LCG::MASK;
+	// 		if ((prevState >> 16) & 0xffff == structureSeed >> 32) {
+	// 			set.insert(((prevState & 0xffff00000000) << 16) + structureSeed);
+	// 		}
+	// 	}
+	// 	return set;
+	// }
 };
 
 #endif

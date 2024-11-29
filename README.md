@@ -1,14 +1,14 @@
 # Vein Cracker
 
-Given details about a set of Minecraft veins (such as their coordinates, types, and attributes), this code is designed to return a list of <!-- worldseeds --> internal java.util.Random states that could <ins>potentially</ins> generate those exact veins.
+Given details about a Minecraft vein (such as its coordinates, type, and attributes), this repository is designed to return a list of internal java.util.Random states that could <ins>potentially</ins> generate that exact vein. With multiple veins, you can then use those internal states to find which lowest 48 bits of worldseeds could <ins>potentially</ins> generate all of them simultaneously.
 
 ## Prerequisites and Limitations
-At the time of writing, this program is still under development. Even when it is finished, it will currently only support
+This program formally supports
 - Java Edition.
-- Version 1.8.9.
-- Dirt veins.
+- Versions Beta 1.6&mdash;1.12.2.
+- Dirt, gravel, coal, iron, gold, redstone, or diamond veins.
 
-The program also uses CUDA, which requires one's device to have an NVIDIA CUDA-capable GPU installed. NVIDIA's CUDA also [does not support MacOS versions OS X 10.14 or beyond](https://developer.nvidia.com/nvidia-cuda-toolkit-developer-tools-mac-hosts). If either of those requirements disqualify your computer, you can instead run the program on a virtual GPU for free (at the time of writing this, and subject to certain runtime limits) through [Google Colab](https://colab.research.google.com).
+This program uses CUDA, which requires your device to have an NVIDIA CUDA-capable GPU installed. NVIDIA's CUDA also [does not support MacOS versions OS X 10.14 or beyond](https://developer.nvidia.com/nvidia-cuda-toolkit-developer-tools-mac-hosts). If either of those requirements disqualify your computer, you can instead run the program on a virtual GPU for free (at the time of writing this, and subject to certain runtime limits) through [Google Colab](https://colab.research.google.com).
 
 If using Windows, you will also need some form of C++ compiler installed; however, there are a myriad of environments that provide one ([Microsoft Visual C++](https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options), though that in turn requires [Visual Studio](https://visualstudio.microsoft.com); [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl); [Minimial System 2](https://www.msys2.org); and others).
 
@@ -16,9 +16,9 @@ If using Windows, you will also need some form of C++ compiler installed; howeve
 1. Download the repository, either as a ZIP file from GitHub (which you then extract) or by cloning it through Git.
 2. Open [the Settings file](./Settings%20(MODIFY%20THIS).cuh) in your favorite code editor, and replace the examples of input data with your own, and the settings with your own. (For enumerations like `Version`, the list of supported values can be found in [Allowed Values for Settings.cuh](./Allowed%20Values%20for%20Settings.cuh).)
 
-(Note: If a multi-day runtime cannot be avoided, one setting the program comes with is the ability to divide one's runs into "partial runs", so that a run can be restarted midway-through at a later time.)
+(Note: If you are looking for the lowest 48 bits of worldseeds, at bare minimum two veins will be necessary: this will currently require running the program multiple times, once for each vein. If multi-day runtimes cannot be avoided, one setting the program comes with is the ability to divide your runs into "partial runs", so that a run can be restarted midway-through at a later time.)
 
-3. Go back and double-check your input data. There is an 80% chance you inputted something incorrectly the first time, and any mistakes will prevent the program from deriving the correct <!-- worldseeds --> internal states.
+3. Go back and double-check your input data. There is an 80% chance you inputted something incorrectly the first time, and any mistakes will prevent the program from deriving the correct internal states, and by extension, the correct lowest 48 bits of worldseeds.
 4. Once you're *completely certain* your input data is correct&mdash;if you wish to run the program on Google Colab:
     1. Visit [the website](https://colab.research.google.com), sign in with a Google account, and create a new notebook.
     2. Open the Files sidebar to the left and upload the program's files, making sure to keep the files' structure the way it originally was (the underlying code files are inside a folder named src, etc.). Don't forget to upload the modified Settings file instead of the original.
@@ -52,7 +52,8 @@ The compiler may print warnings akin to `Stack size for entry function '_Z11biom
 (MacOS)         open -a main.app
 (Google Colab) !.\main
 ```
-As mentioned in step 2, the program's runtime can vary wildly based on one's input data and its comprehensiveness. Nevertheless, if all goes well, a list should be printed to the screen containing your possible <!-- worldseeds --> internal states.
+As mentioned in step 2, the program's runtime can vary wildly based on one's input data and its comprehensiveness. Nevertheless, if all goes well, a list should gradually be printed to the screen containing the possible internal states.
+8. Those internal states, and other information about the veins, can then be plugged into [Combination.cu](<./Combination.cu>) to retrieve which possible lowest 48 bits of worldseeds could generate the vein(s).
 <!-- 
 8. At some point, this program will also automatically filter structure seeds into potential worldseeds. This hasn't been implemented yet, though, so in the meantime one must perform this filtering manually.
     1. Download and open [Cubiomes Viewer](https://github.com/Cubitect/cubiomes-viewer/releases).
