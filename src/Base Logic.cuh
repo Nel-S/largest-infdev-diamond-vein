@@ -246,10 +246,7 @@ struct Coordinate {
 template <class T> struct InclusiveRange {
 	T lowerBound, upperBound;
 	bool inverted;
-	// static constexpr T NO_MINIMUM = INT32_MIN;
-	// static constexpr T NO_MAXIMUM = INT32_MAX;
 
-	// __device__ constexpr InclusiveRange() noexcept : lowerBound(this->NO_MINIMUM), upperBound(this->NO_MAXIMUM), inverted() {}
 	__host__ __device__ constexpr InclusiveRange() noexcept : lowerBound(), upperBound(), inverted() {}
 	__host__ __device__ constexpr InclusiveRange(const InclusiveRange &other) noexcept : lowerBound(other.lowerBound), upperBound(other.upperBound), inverted(other.inverted) {}
 	__host__ __device__ constexpr InclusiveRange(const T &value, bool inverted = false) noexcept : lowerBound(value), upperBound(value), inverted(inverted) {}

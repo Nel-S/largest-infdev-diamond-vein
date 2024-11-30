@@ -1,10 +1,8 @@
 #include "src/Veins Logic.cuh"
 #include <unordered_set>
 
-constexpr Material MATERIAL = Material::Coal;
-// constexpr Material MATERIAL = static_cast<Material>(Material::Redstone);
-constexpr Version VERSION = Version::Beta_1_6;
-// constexpr Version VERSION = Version::v1_8_9;
+constexpr Material MATERIAL = Material::Dirt;
+constexpr Version VERSION = Version::v1_7_9;
 constexpr Pair<int32_t> ORIGIN_CHUNK = {-5, 0};
 // constexpr uint64_t INITIAL_INTERNAL_STATE = 64696796158506;
 // constexpr uint64_t INITIAL_INTERNAL_STATE = 260269899193147;
@@ -19,11 +17,12 @@ struct CoordinateHashFunction {
 	}
 };
 
-constexpr InclusiveRange<int32_t> Y_BOUNDS = getYBounds(VERSION);
+constexpr InclusiveRange<int32_t> Y_BOUNDS = getWorldYRange(VERSION);
 constexpr int32_t VEIN_SIZE = getVeinSize(MATERIAL, VERSION);
-constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinRange(MATERIAL, VERSION);
-constexpr Pair<Coordinate> MAX_VEIN_DISPLACEMENT = getMaxVeinBlockDisplacement(MATERIAL, VERSION);
-constexpr Coordinate MAX_VEIN_DIMENSIONS = getMaxVeinDimensions(MATERIAL, VERSION);
+constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinYRange(MATERIAL, VERSION);
+// TODO: Does not support Beta 1.4-
+constexpr Pair<Coordinate> MAX_VEIN_DISPLACEMENT = getMaxVeinBlockDisplacement_coordinateIndependent(MATERIAL, VERSION);
+constexpr Coordinate MAX_VEIN_DIMENSIONS = getMaxVeinDimensions_coordinateIndependent(MATERIAL, VERSION);
 constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(MATERIAL, VERSION);
 
 std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Minus(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
@@ -53,7 +52,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 	double y1 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2));
 	double y2 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2));
 
-	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_10); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_2_through_v1_7_10); ++k) {
 		float interpoland = static_cast<float>(k)/static_cast<float>(VEIN_SIZE);
 		double xInterpolation = maxX + (minX - maxX) * static_cast<double>(interpoland);
 		double yInterpolation = y1 + (y2 - y1) * static_cast<double>(interpoland);
@@ -110,7 +109,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 	printf("%d\t%d\t%d\t%d\n", call1, call2, call3, call4);
 	// Coordinate veinGenerationPoint = {
 	// 	chunk.first*16 + random.nextInt(16) + 8,
-	// 	VEIN_RANGE.lowerBound + (VEIN_USES_TRIANGULAR_DISTRIBUTION ? random.nextInt(VEIN_RANGE.upperBound) + random.nextInt(VEIN_RANGE.upperBound) - VEIN_RANGE.upperBound : random.nextInt(VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound)) - 2,
+	// 	VEIN_RANGE.lowerBound + (VEIN_USES_TRIANGULAR_DISTRIBUTION ? random.nextInt(VEIN_RANGE.upperBound) + random.nextInt(VEIN_RANGE.upperBound) - VEIN_RANGE.upperBound : random.nextInt(VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound)),
 	// 	chunk.second*16 + random.nextInt(16) + 8
 	// };
 	Coordinate veinGenerationPoint = {
@@ -130,7 +129,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 	angle *= PI;
 	double maxX = sin(angle)*static_cast<double>(VEIN_SIZE)/8.;
 	double maxZ = cos(angle)*static_cast<double>(VEIN_SIZE)/8.;
-	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_through_v1_7_10); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_2_through_v1_7_10); ++k) {
 		double interpoland = static_cast<double>(k)/static_cast<double>(VEIN_SIZE);
 		// Linearly interpolates between -sin(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8.; y1 and y2; and -cos(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8..
 		double xInterpolation = static_cast<double>(veinGenerationPoint.x) + maxX*(1. - 2.*interpoland);

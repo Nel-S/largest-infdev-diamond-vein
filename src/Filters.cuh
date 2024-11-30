@@ -73,7 +73,7 @@ __global__ void filter2(const size_t chunkIndex) {
 	angle *= PI;
 	double maxX = sin(angle)*static_cast<double>(VEIN_SIZE)/8.;
 	double maxZ = cos(angle)*static_cast<double>(VEIN_SIZE)/8.;
-	for (int32_t k = 0; k < VEIN_SIZE + (INPUT_DATA.version <= Version::v1_7_through_v1_7_10); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (INPUT_DATA.version <= Version::v1_7_2_through_v1_7_10); ++k) {
 		double interpoland = static_cast<double>(k)/static_cast<double>(VEIN_SIZE);
 		// Linearly interpolates between -sin(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8.; y1 and y2; and -cos(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8..
 		double xInterpolation = static_cast<double>(veinGenerationPoint.x) + maxX*(1. - 2.*interpoland);

@@ -14,19 +14,21 @@ void deviceManager(int32_t deviceIndex) {
 		if (globalCurrentIteration < GLOBAL_ITERATIONS_NEEDED) ++globalCurrentIteration;
 		mutex.unlock();
 		if (GLOBAL_ITERATIONS_NEEDED <= currentIteration) break;
+		uint64_t actualIterationToTest = START_IN_MIDDLE_OF_RANGE ? GLOBAL_ITERATIONS_NEEDED/2 + (2*(currentIteration & 1) - 1)*((currentIteration + 1)/2) : currentIteration;
 
 		// For each potential origin chunk:
 		for (size_t currentChunkToTest = 0; currentChunkToTest < static_cast<size_t>(TOTAL_NUMBER_OF_POSSIBLE_CHUNKS); ++currentChunkToTest) {
 			// Reset storage array, and call filter 1
 			storageArraySize = 0;
-			filter1<<<constexprCeil(static_cast<double>(WORKERS_PER_DEVICE)/static_cast<double>(WORKERS_PER_BLOCK)), WORKERS_PER_BLOCK>>>((currentIteration + ITERATION_PARTS_OFFSET)*WORKERS_PER_DEVICE, currentChunkToTest);
+			filter1<<<constexprCeil(static_cast<double>(WORKERS_PER_DEVICE)/static_cast<double>(WORKERS_PER_BLOCK)), WORKERS_PER_BLOCK>>>((actualIterationToTest + ITERATION_PARTS_OFFSET)*WORKERS_PER_DEVICE, currentChunkToTest);
+			// filter1<<<constexprCeil(static_cast<double>(WORKERS_PER_DEVICE)/static_cast<double>(WORKERS_PER_BLOCK)), WORKERS_PER_BLOCK>>>((currentIteration + ITERATION_PARTS_OFFSET)*WORKERS_PER_DEVICE, currentChunkToTest);
 			TRY_CUDA(cudaDeviceSynchronize());
 			// If no results were returned, skip filter2
 			if (!storageArraySize) continue;
 
 			// If *too many* results were returned, warn and truncate
 			if (storageArraySize > ACTUAL_STORAGE_CAPACITY) {
-				fprintf(stderr, "WARNING: Iteration %" PRIu64  "on chunk %zd returned %" PRIu64 " more results than the storage array can hold. Discarding the extras. (In future, increase MAX_RESULTS_PER_FILTER or decrease WORKERS_PER_DEVICE.)\n", currentIteration, currentChunkToTest, storageArraySize - ACTUAL_STORAGE_CAPACITY);
+				fprintf(stderr, "WARNING: Iteration %" PRIu64  " on chunk %zd returned %" PRIu64 " more results than the storage array can hold. Discarding the extras. (In future, increase MAX_RESULTS_PER_FILTER or decrease WORKERS_PER_DEVICE.)\n", currentIteration, currentChunkToTest, storageArraySize - ACTUAL_STORAGE_CAPACITY);
 				storageArraySize = ACTUAL_STORAGE_CAPACITY;
 			}
 			// Call filter 2

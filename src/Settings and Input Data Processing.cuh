@@ -44,7 +44,7 @@ constexpr bool inputLayoutPortionContains(const VeinStates state, const Pair<Coo
 
 /* Returns a bounding box around the portion of the input layout consisting of the vein itself.
    Raises an exception if no vein blocks were specified in the input layout.*/
-constexpr Pair<Coordinate> getInputVeinBoundingBox() {
+constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	// Initial bounding box consists of the entire input layout
 	Pair<Coordinate> range = {{0, 0, 0}, {INPUT_DIMENSIONS.x - 1, INPUT_DIMENSIONS.y - 1, INPUT_DIMENSIONS.z - 1}};
 
@@ -107,18 +107,18 @@ constexpr Pair<Coordinate> getInputVeinBoundingBox() {
 	return range;
 }
 
-constexpr Pair<Coordinate> INPUT_VEIN_BOUNDING_BOX = getInputVeinBoundingBox();
+constexpr Pair<Coordinate> KNOWN_INPUT_VEIN_BOUNDING_BOX = getVeinOnlyBoundingBox();
 // The coordinate corresponding to the -x/-y/-z corner of the vein's bounding box.
 constexpr Coordinate KNOWN_VEIN_INPUT_COORDINATE = {
-	INPUT_DATA.coordinate.x + INPUT_VEIN_BOUNDING_BOX.first.x,
-	INPUT_DATA.coordinate.y + INPUT_VEIN_BOUNDING_BOX.first.y,
-	INPUT_DATA.coordinate.z + INPUT_VEIN_BOUNDING_BOX.first.z
+	INPUT_DATA.coordinate.x + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.x,
+	INPUT_DATA.coordinate.y + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.y,
+	INPUT_DATA.coordinate.z + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.z
 };
 // The dimensions of the vein's bounding box.
 constexpr Coordinate KNOWN_VEIN_INPUT_DIMENSIONS = {
-	INPUT_VEIN_BOUNDING_BOX.second.x - INPUT_VEIN_BOUNDING_BOX.first.x + 1,
-	INPUT_VEIN_BOUNDING_BOX.second.y - INPUT_VEIN_BOUNDING_BOX.first.y + 1,
-	INPUT_VEIN_BOUNDING_BOX.second.z - INPUT_VEIN_BOUNDING_BOX.first.z + 1
+	KNOWN_INPUT_VEIN_BOUNDING_BOX.second.x - KNOWN_INPUT_VEIN_BOUNDING_BOX.first.x + 1,
+	KNOWN_INPUT_VEIN_BOUNDING_BOX.second.y - KNOWN_INPUT_VEIN_BOUNDING_BOX.first.y + 1,
+	KNOWN_INPUT_VEIN_BOUNDING_BOX.second.z - KNOWN_INPUT_VEIN_BOUNDING_BOX.first.z + 1
 };
 static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.x && KNOWN_VEIN_INPUT_DIMENSIONS.x <= INPUT_DIMENSIONS.x, "Data results in an impossible vein bounding box in the x-direction.");
 static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.y && KNOWN_VEIN_INPUT_DIMENSIONS.y <= INPUT_DIMENSIONS.y, "Data results in an impossible vein bounding box in the y-direction.");
@@ -127,29 +127,16 @@ static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.z && KNOWN_VEIN_INPUT_DIMENSIONS.
 
 constexpr bool USE_POPULATION_OFFSET = INPUT_DATA.version <= Version::v1_8_through_v1_12_2;
 
-constexpr InclusiveRange<int32_t> Y_BOUNDS = getYBounds(INPUT_DATA.version);
+constexpr InclusiveRange<int32_t> Y_BOUNDS = getWorldYRange(INPUT_DATA.version);
 
 constexpr int32_t VEIN_SIZE = getVeinSize(INPUT_DATA.material, INPUT_DATA.version);
-constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinRange(INPUT_DATA.material, INPUT_DATA.version);
+constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinYRange(INPUT_DATA.material, INPUT_DATA.version);
 static_assert(!((VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound) & (VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound - 1)), "Features with non-power-of-two ranges are not yet supported.");
-constexpr Pair<Coordinate> MAX_VEIN_BLOCK_DISPLACEMENT = getMaxVeinBlockDisplacement(INPUT_DATA.material, INPUT_DATA.version);
 constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(INPUT_DATA.material, INPUT_DATA.version);
 static_assert(!VEIN_USES_TRIANGULAR_DISTRIBUTION, "Features with triangular distributions are not yet supported.");
 
 // The bounding box the generation point can lay within, based on the dimensions of the vein alone.
-__device__ constexpr Pair<Coordinate> VEIN_GENERATION_POINT_BOUNDING_BOX = {
-	{
-		KNOWN_VEIN_INPUT_COORDINATE.x + (KNOWN_VEIN_INPUT_DIMENSIONS.x - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.x,
-		// The generation point can't lie below the vein's lower generation point range
-		constexprMax(KNOWN_VEIN_INPUT_COORDINATE.y + (KNOWN_VEIN_INPUT_DIMENSIONS.y - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.y, VEIN_RANGE.lowerBound - VEIN_RANGE.upperBound*VEIN_USES_TRIANGULAR_DISTRIBUTION),
-		KNOWN_VEIN_INPUT_COORDINATE.z + (KNOWN_VEIN_INPUT_DIMENSIONS.z - 1) - MAX_VEIN_BLOCK_DISPLACEMENT.second.z
-	}, {
-		KNOWN_VEIN_INPUT_COORDINATE.x - MAX_VEIN_BLOCK_DISPLACEMENT.first.x,
-		// The generation point can't lie above the vein's maximum generation point range
-		constexprMin(KNOWN_VEIN_INPUT_COORDINATE.y - MAX_VEIN_BLOCK_DISPLACEMENT.first.y, VEIN_RANGE.upperBound + (VEIN_RANGE.lowerBound - 2)*VEIN_USES_TRIANGULAR_DISTRIBUTION),
-		KNOWN_VEIN_INPUT_COORDINATE.z - MAX_VEIN_BLOCK_DISPLACEMENT.first.z
-	}
-};
+__device__ constexpr Pair<Coordinate> VEIN_GENERATION_POINT_BOUNDING_BOX = getVeinGenerationPointBoundingBox(KNOWN_INPUT_VEIN_BOUNDING_BOX, KNOWN_VEIN_INPUT_COORDINATE, INPUT_DATA.material, INPUT_DATA.version);
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.x <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.x, "Data results in an impossible generation point bounding box in the x-direction.");
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.y <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.y, "Data results in an impossible generation point bounding box in the y-direction.");
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.z <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.z, "Data results in an impossible generation point bounding box in the z-direction.");
