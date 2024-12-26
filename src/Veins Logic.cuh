@@ -101,8 +101,8 @@ constexpr [[nodiscard]] int32_t getVeinSize(const Material material, const Versi
 				default: throw std::invalid_argument("Invalid version provided.");
 			}
 		case ExperimentalMaterial::Magma:
-			// 1.9.4-(?) didn't generate magma
-			if (version <= Version::v1_9_4) throw std::invalid_argument("Invalid version provided.");
+			// 1.9.4- didn't generate magma
+			if (version <= Version::v1_8_through_v1_9_4) throw std::invalid_argument("Invalid version provided.");
 			switch (version) {
 				case Version::v1_12_2:
 				case ExperimentalVersion::v1_13:
@@ -153,9 +153,9 @@ constexpr [[nodiscard]] InclusiveRange<int32_t> getVeinYRange(const Material mat
 				default: throw std::invalid_argument("Invalid version provided.");
 			}
 		case Material::Gold:
-			if (version <= Version::v1_8_through_v1_12_2) return {0, 32};
+			if (version <= Version::v1_8_through_v1_9_4) return {0, 32};
+			if (version <= ExperimentalVersion::v1_13) return {0, 32}; // PLUS {32, 48} in Badlands-related biomes
 			switch (version) {
-				case ExperimentalVersion::v1_13:
 				case ExperimentalVersion::v1_16_5:
 					return {0, 32}; // PLUS {32, 48} in Badlands-related biomes
 				default: throw std::invalid_argument("Invalid version provided.");
@@ -195,18 +195,16 @@ constexpr [[nodiscard]] InclusiveRange<int32_t> getVeinYRange(const Material mat
 		case ExperimentalMaterial::Quartz:
 			// 1.4.7- didn't generate quartz
 			if (version <= Version::v1_4_2_through_v1_4_7) throw std::invalid_argument("Invalid version provided.");
-			if (version <= Version::v1_8_through_v1_12_2) return {10, 118};
+			if (version <= Version::v1_10_through_v1_12_2) return {10, 118};
 			if (version <= ExperimentalVersion::v1_13) return {10, 108};
 			switch (version) {
 				default: throw std::invalid_argument("Invalid version provided.");
 			}
 		case ExperimentalMaterial::Magma:
 			// 1.9.4-(?) didn't generate magma
-			if (version <= Version::v1_9_4) throw std::invalid_argument("Invalid version provided.");
+			if (version <= Version::v1_8_through_v1_9_4) throw std::invalid_argument("Invalid version provided.");
+			if (version <= ExperimentalVersion::v1_13) return {27, 37};
 			switch (version) {
-				case Version::v1_12_2:
-				case ExperimentalVersion::v1_13:
-					return {27, 37};
 				default: throw std::invalid_argument("Invalid version provided.");
 			}
 		default: throw std::invalid_argument("Invalid material provided.");
@@ -280,7 +278,7 @@ constexpr [[nodiscard]] bool veinUsesTriangularDistribution(const Material mater
 			}
 		case ExperimentalMaterial::Magma:
 			// 1.9.4-(?) didn't generate magma
-			if (version <= Version::v1_9_4) throw std::invalid_argument("Invalid version provided.");
+			if (version <= Version::v1_8_through_v1_9_4) throw std::invalid_argument("Invalid version provided.");
 			switch (version) {
 				case Version::v1_12_2:
 				case ExperimentalVersion::v1_13:
@@ -291,15 +289,19 @@ constexpr [[nodiscard]] bool veinUsesTriangularDistribution(const Material mater
 	}
 }
 
+/* Represents 1 - 1/2^53.
+   However, it is not exactly equal because multiple calculations would otherwise lose precision and return 1.,
+    which would defeat the purpose.*/
+constexpr double MAX_DOUBLE_IN_RANGE = 0.999999999999999;
 
 // The maximum number of blocks away the vein's blocks can be placed from its generation point.
 // First is farthest in the negative directions; second is farthest in the positive directions.
 constexpr [[nodiscard]] Pair<Coordinate> getMaxVeinBlockDisplacement(const Material material, const Version version, const Coordinate &generationPoint) {
 	double veinSize = static_cast<double>(getVeinSize(material, version));
 	/* In 1.7.9, the maximum interpoland is 1.; in 1.8.9, it's 1. - 1./veinSize.*/
-	double commonHorizontalMinTerm = (Version::v1_8_through_v1_12_2 <= version)/4. - veinSize*(4 + 0.999999999999999 /* 1 - 1/2^53 */ *(constexprSin((1. - static_cast<double>(Version::v1_8_through_v1_12_2 <= version)/veinSize)*PI) + 1))/32. - 0.5;
-	double commonHorizontalMaxTerm = veinSize*4.999999999999999 /* 5 - 1/2^53 */ /32. + 0.5;
-	double commonVerticalTerm = veinSize * 0.999999999999999 /* 1 - 1/2^53 */ * (constexprSin(constexprFloor((veinSize + static_cast<double>(Version::v1_8_through_v1_12_2 <= version))/2.)*PI/veinSize) + 1)/32. + 0.5;
+	double commonHorizontalMinTerm = static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/4. - veinSize*(4 + MAX_DOUBLE_IN_RANGE*(constexprSin((1. - static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/veinSize)*PI) + 1))/32. - 0.5;
+	double commonHorizontalMaxTerm = veinSize*(4 + MAX_DOUBLE_IN_RANGE)/32. + 0.5;
+	double commonVerticalTerm = veinSize * MAX_DOUBLE_IN_RANGE*(constexprSin(constexprFloor((veinSize + static_cast<double>(Version::v1_8_through_v1_9_4 <= version))/2.)*PI/veinSize) + 1)/32. + 0.5;
 
 	return {
 		{
@@ -324,14 +326,15 @@ constexpr [[nodiscard]] Pair<Coordinate> getMaxVeinBlockDisplacement(const Mater
 	};
 }
 
-// The maximum number of blocks away the vein's blocks can be placed from its generation point, *excluding the Beta 1.4- bug*.
+// The maximum number of blocks away the vein's blocks can be placed from its generation point, *excluding the Beta 1.5.02- bug*.
 // First is farthest in the negative directions; second is farthest in the positive directions.
 constexpr [[nodiscard]] Pair<Coordinate> getMaxVeinBlockDisplacement_coordinateIndependent(const Material material, const Version version) {
+	// if (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02) throw std::invalid_argument("Invalid version provided.");
 	double veinSize = static_cast<double>(getVeinSize(material, version));
 	/* In 1.7.9, the maximum interpoland is 1.; in 1.8.9, it's 1. - 1./veinSize.*/
-	double commonHorizontalMinTerm = (Version::v1_8_through_v1_12_2 <= version)/4. - veinSize*(4 + 0.999999999999999 /* 1 - 1/2^53 */ *(constexprSin((1. - static_cast<double>(Version::v1_8_through_v1_12_2 <= version)/veinSize)*PI) + 1))/32. - 0.5;
-	double commonHorizontalMaxTerm = veinSize*4.999999999999999 /* 5 - 1/2^53 */ /32. + 0.5;
-	double commonVerticalTerm = veinSize * 0.999999999999999 /* 1 - 1/2^53 */ * (constexprSin(constexprFloor((veinSize + static_cast<double>(Version::v1_8_through_v1_12_2 <= version))/2.)*PI/veinSize) + 1)/32. + 0.5;
+	double commonHorizontalMinTerm = static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/4. - veinSize*(4 + MAX_DOUBLE_IN_RANGE*(constexprSin((1. - static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/veinSize)*PI) + 1))/32. - 0.5;
+	double commonHorizontalMaxTerm = veinSize*(4 + MAX_DOUBLE_IN_RANGE)/32. + 0.5;
+	double commonVerticalTerm = veinSize * MAX_DOUBLE_IN_RANGE * (constexprSin(constexprFloor((veinSize + static_cast<double>(Version::v1_8_through_v1_9_4 <= version))/2.)*PI/veinSize) + 1)/32. + 0.5;
 
 	return {
 		{
@@ -352,6 +355,7 @@ constexpr [[nodiscard]] Pair<Coordinate> getMaxVeinBlockDisplacement_coordinateI
 	};
 }
 
+// The dimensions of the largest possible vein.
 constexpr [[nodiscard]] Coordinate getMaxVeinDimensions(const Material material, const Version version, const Coordinate &generationPoint) {
 	Pair<Coordinate> maxVeinDisplacement = getMaxVeinBlockDisplacement(material, version, generationPoint);
 	return Coordinate(
@@ -361,6 +365,7 @@ constexpr [[nodiscard]] Coordinate getMaxVeinDimensions(const Material material,
 	);
 };
 
+// The dimensions of the largest possible vein, *excluding the Beta 1.5.02- bug*.
 constexpr [[nodiscard]] Coordinate getMaxVeinDimensions_coordinateIndependent(const Material material, const Version version) {
 	Pair<Coordinate> maxVeinDisplacement = getMaxVeinBlockDisplacement_coordinateIndependent(material, version);
 	return Coordinate(
@@ -371,68 +376,43 @@ constexpr [[nodiscard]] Coordinate getMaxVeinDimensions_coordinateIndependent(co
 };
 
 // 
-__device__ constexpr [[nodiscard]] Pair<Coordinate> getVeinGenerationPointBoundingBox(const Pair<Coordinate> &veinOnlyBoundingBox, const Coordinate &veinOnlyCoordinate, const Material material, const Version version) {
+constexpr [[nodiscard]] Pair<Coordinate> getVeinGenerationPointBoundingBox(const Pair<Coordinate> &veinOnlyBoundingBox, const Coordinate &veinOnlyCoordinate, const Material material, const Version version) {
 	double veinSize = static_cast<double>(getVeinSize(material, version));
+	InclusiveRange<int32_t> veinYRange = getVeinYRange(material, version);
 	Pair<Coordinate> maxDisplacement = getMaxVeinBlockDisplacement_coordinateIndependent(material, version);
+	bool usesTriangularDistribution = veinUsesTriangularDistribution(material, version);
 
 	/* If I haven't made a calculation error somewhere here, I'll eat my hat. */
-	double commonHorizontalTermPre1_8 = veinSize*4.999999999999999 /* 5 - 1/2^53 */ /32. + 0.5;
-	double commonVerticalTermPre1_8   = veinSize*0.999999999999999 /* 1 - 1/2^53 */ * (constexprSin(constexprFloor(veinSize/2.)*PI/veinSize) + 1)/32. + 0.5;
+	double commonHorizontalTermPre1_8 = veinSize*(4 + MAX_DOUBLE_IN_RANGE)/32. + 0.5;
+	double commonVerticalTermPre1_8   = veinSize*MAX_DOUBLE_IN_RANGE*(constexprSin(constexprFloor(veinSize/2.)*PI/veinSize) + 1)/32. + 0.5;
 	return {
 		{
 			veinOnlyCoordinate.x + veinOnlyBoundingBox.second.x - maxDisplacement.second.x - (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 && commonHorizontalTermPre1_8 != static_cast<int32_t>(commonHorizontalTermPre1_8) && veinOnlyBoundingBox.second.x - maxDisplacement.second.x - 1 < -constexprFloor(commonHorizontalTermPre1_8)),
 			// The generation point can't lie below the vein's lower generation point range
-			constexprMax(veinOnlyCoordinate.y + veinOnlyBoundingBox.second.y - maxDisplacement.second.y, VEIN_RANGE.lowerBound - VEIN_RANGE.upperBound*VEIN_USES_TRIANGULAR_DISTRIBUTION),
+			constexprMax(veinOnlyCoordinate.y + veinOnlyBoundingBox.second.y - maxDisplacement.second.y, veinYRange.lowerBound - veinYRange.upperBound*usesTriangularDistribution),
 			veinOnlyCoordinate.z + veinOnlyBoundingBox.second.z - maxDisplacement.second.z - (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 && commonHorizontalTermPre1_8 != static_cast<int32_t>(commonHorizontalTermPre1_8) && veinOnlyBoundingBox.second.z - maxDisplacement.second.z - 1 < -constexprFloor(commonHorizontalTermPre1_8))
 		}, {
 			veinOnlyCoordinate.x + veinOnlyBoundingBox.first.x - maxDisplacement.first.x + (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 && -commonHorizontalTermPre1_8 != static_cast<int32_t>(-commonHorizontalTermPre1_8) && veinOnlyBoundingBox.first.x - maxDisplacement.first.x + 1 < -constexprFloor(-commonHorizontalTermPre1_8)),
 			// The generation point can't lie above the vein's maximum generation point range
-			constexprMin(veinOnlyCoordinate.y + veinOnlyBoundingBox.first.y - maxDisplacement.first.y, VEIN_RANGE.upperBound + (VEIN_RANGE.lowerBound - 2)*VEIN_USES_TRIANGULAR_DISTRIBUTION),
+			constexprMin(veinOnlyCoordinate.y + veinOnlyBoundingBox.first.y - maxDisplacement.first.y, veinYRange.upperBound + (veinYRange.lowerBound - 2)*usesTriangularDistribution),
 			veinOnlyCoordinate.z + veinOnlyBoundingBox.first.z - maxDisplacement.first.z + (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 && -commonHorizontalTermPre1_8 != static_cast<int32_t>(-commonHorizontalTermPre1_8) && veinOnlyBoundingBox.first.z - maxDisplacement.first.z + 1 < -constexprFloor(-commonHorizontalTermPre1_8))
 		}
 	};
 }
 
-// TODO: Generalize
-// constexpr [[nodiscard]] Pair<InclusiveRange<float>> getAngleBounds(const Material material, const Version version) {
-// 	int32_t veinSize = getVeinSize(material, version);
-// 	Coordinate maxVeinDimensions = getMaxVeinDimensions(material, version);
+// Returns the range of multiples for which the 
+constexpr [[nodiscard]] Pair<InclusiveRange<int32_t>> getAngleIndexRanges(const Material material, const Version version) {
+	// if (version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02) throw std::invalid_argument("Invalid version provided.");
+	int32_t veinSize = getVeinSize(material, version);
+	Coordinate maxVeinDimensions = getMaxVeinDimensions_coordinateIndependent(material, version);
 
-// 	InclusiveRange<float> lower(0.f, 1.f), upper(0.f, 1.f);
-// 	switch (veinSize) {
-// 		case 33: switch (version) {
-// 			case Version::v1_7_2_through_v1_7_10:
-// 				switch (maxVeinDimensions.x) {
-// 					case 11:
-// 					case 10:
-// 						upper.lowerBound = 0.335f;
-// 						lower.upperBound = 0.665f;
-// 						break;
-// 					case 9:
-// 					case 8:
-// 						upper.lowerBound = 0.335f;
-// 						lower.upperBound = 0.665f;
-// 						break;
-// 					case 7:
-// 					case 6:
-// 						upper.lowerBound = 0.335f;
-// 						lower.upperBound = 0.665f;
-// 						break;
-// 				}
-// 				break;
-// 			case Version::v1_8_through_v1_12_2: switch (maxVeinDimensions.x) {
-// 				case 11:
-// 					upper.lowerBound = 0.335f;
-// 					lower.upperBound = 0.665f;
-// 					break;
-// 				case 10:
-// 					upper.lowerBound = 0.335f;
-// 					lower.upperBound = 0.665f;
-// 					break;
-// 			}
-// 		}
-// 	}
-// 	return {lower, upper};
-// }
+	double commonIndicesTerm = -(constexprSin((1 - static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/veinSize)*PI) + 1.)*veinSize/32.*MAX_DOUBLE_IN_RANGE - 0.5;
+	// Prior to flooring, first term is exclusive while second term is inclusive.
+	InclusiveRange<int32_t> leftIndices = {static_cast<int32_t>(constexprFloor(static_cast<double>(Version::v1_8_through_v1_9_4 <= version)/4. - veinSize/8. + commonIndicesTerm)) + 1, static_cast<int32_t>(constexprFloor(commonIndicesTerm)), false};
+	// Prior to ceiling-ing, first term is inclusive while second term is exclusive.
+	InclusiveRange<int32_t> rightIndices = {static_cast<int32_t>(constexprCeil(veinSize*MAX_DOUBLE_IN_RANGE/32. + 0.5)), static_cast<int32_t>(constexprCeil(veinSize*(4. + MAX_DOUBLE_IN_RANGE)/32. + 0.5)) - 1, false};
+
+	return {leftIndices, rightIndices};
+}
 
 #endif

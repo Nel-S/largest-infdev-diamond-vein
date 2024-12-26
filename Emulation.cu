@@ -3,10 +3,8 @@
 
 constexpr Material MATERIAL = Material::Dirt;
 constexpr Version VERSION = Version::v1_7_9;
-constexpr Pair<int32_t> ORIGIN_CHUNK = {-5, 0};
-// constexpr uint64_t INITIAL_INTERNAL_STATE = 64696796158506;
-// constexpr uint64_t INITIAL_INTERNAL_STATE = 260269899193147;
-constexpr uint64_t INITIAL_INTERNAL_STATE = 9999776561442;
+constexpr Pair<int32_t> ORIGIN_CHUNK = {-11, 7};
+constexpr uint64_t INITIAL_INTERNAL_STATE = 228734195037066;
 
 // ~~~
 
@@ -29,7 +27,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Stone;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -97,7 +95,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Stone;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -159,7 +157,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 					if (vectorXSquared + vectorYSquared + vectorZSquared >= maxRadiusSquared) continue;
 
 					if (y < Y_BOUNDS.lowerBound || Y_BOUNDS.upperBound < y) continue;
-					printf("(%d, %d, %d)\n", x, y, z);
+					// printf("(%d, %d, %d)\n", x, y, z);
 					coordsSet.insert(Coordinate(x, y, z));
 					size_t xIndex = static_cast<size_t>(x - veinGenerationPoint.x - MAX_VEIN_DISPLACEMENT.first.x);
 					size_t yIndex = static_cast<size_t>(y - veinGenerationPoint.y - MAX_VEIN_DISPLACEMENT.first.y);
@@ -180,7 +178,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_13(const
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Stone;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -280,7 +278,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_13(c
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Stone;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -369,12 +367,12 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_13(c
 
 
 std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
-	return (VERSION <= Version::v1_8_through_v1_12_2 ? emulateVeinRaw_1_12_2_Minus : emulateVeinRaw_1_13)(chunk, random, vein, veinCoordinate);
+	return (VERSION <= Version::v1_10_through_v1_12_2 ? emulateVeinRaw_1_12_2_Minus : emulateVeinRaw_1_13)(chunk, random, vein, veinCoordinate);
 }
 
 
 std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
-	return (VERSION <= Version::v1_8_through_v1_12_2 ? emulateVeinCleaned_1_12_2_Minus : emulateVeinCleaned_1_13)(chunk, random, vein, veinCoordinate);
+	return (VERSION <= Version::v1_10_through_v1_12_2 ? emulateVeinCleaned_1_12_2_Minus : emulateVeinCleaned_1_13)(chunk, random, vein, veinCoordinate);
 }
 
 
@@ -384,7 +382,7 @@ void printVein(const VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
 			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) {
 				switch (vein[y][z][x]) {
-					case VeinStates::Stone:
+					case VeinStates::Background:
 						printf("_");
 						break;
 					case VeinStates::Vein:

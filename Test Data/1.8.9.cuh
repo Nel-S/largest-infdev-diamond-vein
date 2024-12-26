@@ -10,6 +10,8 @@ __device__ constexpr InputData TEST_DATA_1_8_9__1 = {
 	Material::Dirt,
 	// The coordinate corresponding to the first top-most corner in the input layout below (the -x/-y/-z corner).
 	{54, 47, -76},
+	// The default state outside of the input layout.
+	VeinStates::Stone,
 };
 // Note: Don't get your x-directions, y-directions, and z-directions mixed up.
 constexpr VeinStates TEST_DATA_1_8_9__1_LAYOUT[][10][6] = {
@@ -94,6 +96,8 @@ __device__ constexpr InputData TEST_DATA_1_8_9__2 = {
 	Version::v1_8_9,
 	Material::Dirt,
 	{68, 47, 89},
+	// The default state outside of the input layout.
+	VeinStates::Stone,
 };
 
 constexpr VeinStates TEST_DATA_1_8_9__2_LAYOUT[][10][6] = {
@@ -152,6 +156,8 @@ __device__ constexpr InputData TEST_DATA_1_8_9__3 = {
 	Version::v1_8_9,
 	Material::Dirt,
 	{75, 8, -71},
+	// The default state outside of the input layout.
+	VeinStates::Stone,
 };
 constexpr VeinStates TEST_DATA_1_8_9__3_LAYOUT[][9][7] = {
 	{ // -y

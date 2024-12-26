@@ -65,7 +65,7 @@ __global__ void filter2(const size_t chunkIndex) {
 	VeinStates currentVein[INPUT_DIMENSIONS.y][INPUT_DIMENSIONS.z][INPUT_DIMENSIONS.x];
 	for (int32_t y = 0; y < INPUT_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < INPUT_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < INPUT_DIMENSIONS.x; ++x) currentVein[y][z][x] = VeinStates::Stone;
+			for (int32_t x = 0; x < INPUT_DIMENSIONS.x; ++x) currentVein[y][z][x] = VeinStates::Background;
 		}
 	}
 
@@ -109,10 +109,10 @@ __global__ void filter2(const size_t chunkIndex) {
 					// If that coordinate would fall outside the layout's bounds:
 					if (xIndex < 0 || INPUT_DIMENSIONS.x <= xIndex || yIndex < 0 || INPUT_DIMENSIONS.y <= yIndex || zIndex < 0 || INPUT_DIMENSIONS.z <= zIndex) {
 						// Quit if acting as stone, otherwise ignore (if treating as unknown)
-						if (TREAT_COORDINATES_OUTSIDE_INPUT_AS_STONE) return;
+						if (INPUT_DATA.defaultStateOutsideLayout == VeinStates::Background) return;
 					} else {
 						// Otherwise if it does fall within the layout's bounds, but the input data differs, quit
-						if (inputLayoutCopy.copy[yIndex][zIndex][xIndex] == VeinStates::Stone) return;
+						if (inputLayoutCopy.copy[yIndex][zIndex][xIndex] == VeinStates::Background) return;
 						// Otherwise add to current vein
 						currentVein[yIndex][zIndex][xIndex] = VeinStates::Vein;
 					}

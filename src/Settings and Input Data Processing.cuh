@@ -125,7 +125,7 @@ static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.y && KNOWN_VEIN_INPUT_DIMENSIONS.
 static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.z && KNOWN_VEIN_INPUT_DIMENSIONS.z <= INPUT_DIMENSIONS.z, "Data results in an impossible vein bounding box in the z-direction.");
 
 
-constexpr bool USE_POPULATION_OFFSET = INPUT_DATA.version <= Version::v1_8_through_v1_12_2;
+constexpr bool USE_POPULATION_OFFSET = INPUT_DATA.version <= Version::v1_10_through_v1_12_2;
 
 constexpr InclusiveRange<int32_t> Y_BOUNDS = getWorldYRange(INPUT_DATA.version);
 
@@ -183,6 +183,44 @@ struct ChunksToExamine {
 
 __device__ constexpr ChunksToExamine CHUNKS_TO_EXAMINE;
 
+// The ranges of angles that could possibly generate the vein with the dimensions it has.
+constexpr [[nodiscard]] Pair<InclusiveRange<float>> getAngleBounds() {
+	InclusiveRange<float> lower(0.f, 0.5f), upper(0.5f, 1.f);
+	// Calculations haven't been done for Beta 1.5.02- generation
+	if (INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02) return {lower, upper};
+
+	int32_t veinSize = getVeinSize(INPUT_DATA.material, INPUT_DATA.version);
+	Coordinate maxVeinDimensions = getMaxVeinDimensions_coordinateIndependent(INPUT_DATA.material, INPUT_DATA.version);
+	constexpr Pair<InclusiveRange<int32_t>> ANGLE_INDEX_RANGES = getAngleIndexRanges(INPUT_DATA.material, INPUT_DATA.version);
+	
+	constexpr size_t TOTAL_ANGLE_INDICES = ANGLE_INDEX_RANGES.first.getRange() + ANGLE_INDEX_RANGES.second.getRange();
+	// TODO: Rewrite without needing an array, which can then be made input-data-independent
+	double changeAngles[TOTAL_ANGLE_INDICES + 1] = {};
+
+	// First iteration is x (sines), second is z (cosines)
+	for (int32_t direction = 0; direction <= 1; ++direction) {
+		size_t i = 0;
+		/* Since the */ 
+		for (int32_t angleIndex = ANGLE_INDEX_RANGES.first.lowerBound; angleIndex <= ANGLE_INDEX_RANGES.first.upperBound; ++angleIndex, ++i) changeAngles[i] = (direction ? constexprArccos : constexprArcsin)(((constexprSin((1 - static_cast<double>(Version::v1_8_through_v1_9_4 <= INPUT_DATA.version)/veinSize)*PI) + 1.)*veinSize/4.*MAX_DOUBLE_IN_RANGE + 4. + 8.*angleIndex)/(2.*static_cast<double>(Version::v1_8_through_v1_9_4 <= INPUT_DATA.version) - veinSize))/PI;
+		for (int32_t angleIndex = ANGLE_INDEX_RANGES.second.lowerBound; angleIndex <= ANGLE_INDEX_RANGES.second.upperBound; ++angleIndex, ++i) changeAngles[i] = (direction ? constexprArccos : constexprArcsin)(-MAX_DOUBLE_IN_RANGE/4. - 4./veinSize*(1. - 2.*angleIndex))/PI;
+		changeAngles[TOTAL_ANGLE_INDICES] = 0.5*direction;
+		constexprOrder(changeAngles, TOTAL_ANGLE_INDICES + 1, !direction);
+
+		double chosenAngle = changeAngles[constexprMin(direction ? maxVeinDimensions.z - KNOWN_VEIN_INPUT_DIMENSIONS.z : maxVeinDimensions.x - KNOWN_VEIN_INPUT_DIMENSIONS.x, static_cast<int32_t>(TOTAL_ANGLE_INDICES))];
+		(direction ? lower.upperBound : lower.lowerBound) = static_cast<float>(chosenAngle);
+		(direction ? upper.lowerBound : upper.upperBound) = static_cast<float>(1. - chosenAngle);
+	}
+
+	return {lower, upper};
+}
+
+__device__ constexpr Pair<InclusiveRange<float>> ANGLE_BOUNDS = getAngleBounds();
+// __device__ constexpr Pair<InclusiveRange<float>> ANGLE_BOUNDS = {{0.f, 0.5f}, {0.5f, 1.f}};
+static_assert(ANGLE_BOUNDS.first.lowerBound <= ANGLE_BOUNDS.second.upperBound, "Error: Data results in impossible angle bounds for the x-direction.");
+static_assert(ANGLE_BOUNDS.first.upperBound <= ANGLE_BOUNDS.second.lowerBound, "Error: Data results in impossible angle bounds for the z-direction.");
+
+
+
 // TODO: Generalize for triangular distributions, and for when upperBound-lowerBound is not a power of two
 constexpr uint32_t BITS_LEFT_AFTER_Y = getNumberOfTrailingZeroes(LCG::MASK + 1) - getNumberOfTrailingZeroes(VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound);
 constexpr uint64_t TOTAL_ITERATIONS = constexprCeil(static_cast<double>(static_cast<uint64_t>(VEIN_GENERATION_POINT_BOUNDING_BOX.second.y - VEIN_GENERATION_POINT_BOUNDING_BOX.first.y + 1) << BITS_LEFT_AFTER_Y)/static_cast<double>(WORKERS_PER_DEVICE));
@@ -192,5 +230,23 @@ constexpr uint64_t GLOBAL_ITERATIONS_NEEDED = TOTAL_ITERATIONS - ITERATION_PARTS
 constexpr uint64_t ACTUAL_STORAGE_CAPACITY = constexprMin(MAX_RESULTS_PER_FILTER, WORKERS_PER_DEVICE);
 __device__ uint64_t STORAGE_ARRAY[ACTUAL_STORAGE_CAPACITY];
 __managed__ size_t storageArraySize = 0;
+
+
+struct EstimatedResults {
+	uint64_t chunk[TOTAL_NUMBER_OF_POSSIBLE_CHUNKS];
+	__device__ constexpr EstimatedResults() : chunk() {
+		for (int32_t i = 0; i < TOTAL_NUMBER_OF_POSSIBLE_CHUNKS; ++i) {
+			this->chunk[i] = static_cast<uint64_t>(static_cast<double>(twoToThePowerOf(48)) *
+				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.x - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.x + 1)/16. *
+				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.y - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.y + 1)/static_cast<double>(Y_BOUNDS.getRange()) *
+				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.z - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.z + 1)/16. *
+				static_cast<double>(ANGLE_BOUNDS.first.getRange()) *
+				static_cast<double>(ANGLE_BOUNDS.second.getRange())
+			);
+		}
+	}
+};
+__device__ constexpr EstimatedResults estimatedResults;
+// static_assert(estimatedResults.chunk[0]/static_cast<double>(GLOBAL_ITERATIONS_NEEDED) <= ACTUAL_STORAGE_CAPACITY, "");
 
 #endif

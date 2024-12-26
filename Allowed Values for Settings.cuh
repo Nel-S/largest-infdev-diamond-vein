@@ -34,14 +34,14 @@ enum Version {
 			Beta_1_6_6 = Beta_1_6_through_Beta_1_7_3,
 		Beta_1_7 = Beta_1_6_through_Beta_1_7_3, Beta_1_7_01 = Beta_1_6_through_Beta_1_7_3, Beta_1_7_2  = Beta_1_6_through_Beta_1_7_3,
 			Beta_1_7_3 = Beta_1_6_through_Beta_1_7_3,
-	/* Veins were moved down four blocks. */
+	/* Veins were moved downward. */
 	// WARNING: Only Beta 1.8 has been decompiled and examined.
 	Beta_1_8_through_v1_2,
 		Beta_1_8 = Beta_1_8_through_v1_2,
 		v1_0     = Beta_1_8_through_v1_2,
 		v1_1     = Beta_1_8_through_v1_2,
 		v1_2     = Beta_1_8_through_v1_2,
-	/* World y-height increased from 127 to 255. */
+	/* World y-height increased. */
 	// WARNING: Only 1.3.1 and 1.3.2 have been decompiled and examined.
 	// TODO: Verify 1.2.1 height change
 	v1_2_1_through_v1_3_2,
@@ -56,27 +56,30 @@ enum Version {
 	/* Quartz was added. */
 	// WARNING: Only 1.5 and 1.6.4 have been decompiled and examined.
 	v1_5_through_v1_6_4,
-		v1_5   = v1_5_through_v1_6_4, v1_5_1 = v1_5_through_v1_6_4, v1_5_2  = v1_5_through_v1_6_4,
-		v1_6   = v1_5_through_v1_6_4, v1_6_1 = v1_5_through_v1_6_4, v1_6_2  = v1_5_through_v1_6_4,
+		v1_5 = v1_5_through_v1_6_4, v1_5_1 = v1_5_through_v1_6_4, v1_5_2 = v1_5_through_v1_6_4,
+		v1_6 = v1_5_through_v1_6_4, v1_6_1 = v1_5_through_v1_6_4, v1_6_2 = v1_5_through_v1_6_4,
 			v1_6_4 = v1_5_through_v1_6_4,
-	/* The maximum generation point y-value for dirt and veins increased to 255. */
+	/* The maximum generation point y-value for dirt and veins increased. */
 	// WARNING: Only 1.7, 1.7.9, and 1.7.10 have been decompiled and examined.
 	v1_7_2_through_v1_7_10,
 		v1_7_2 = v1_7_2_through_v1_7_10, v1_7_4 = v1_7_2_through_v1_7_10, v1_7_5 = v1_7_2_through_v1_7_10,
 			v1_7_6 = v1_7_2_through_v1_7_10, v1_7_7  = v1_7_2_through_v1_7_10, v1_7_8 = v1_7_2_through_v1_7_10,
 			v1_7_9 = v1_7_2_through_v1_7_10, v1_7_10 = v1_7_2_through_v1_7_10,
-	/* All vein sizes increased by one. Interpolation line became asymmetric. Diorite, andesite, and granite were added. */
-	// WARNING: Only 1.8, 1.8.9, and 1.12.2 have been decompiled and examined.
-	v1_8_through_v1_12_2,
-		v1_8   = v1_8_through_v1_12_2, v1_8_1  = v1_8_through_v1_12_2, v1_8_2  = v1_8_through_v1_12_2,
-			v1_8_3 = v1_8_through_v1_12_2, v1_8_4 = v1_8_through_v1_12_2, v1_8_5 = v1_8_through_v1_12_2,
-			v1_8_6 = v1_8_through_v1_12_2, v1_8_7 = v1_8_through_v1_12_2, v1_8_8 = v1_8_through_v1_12_2,
-			v1_8_9 = v1_8_through_v1_12_2,
-		v1_9   = v1_8_through_v1_12_2, v1_9_1  = v1_8_through_v1_12_2, v1_9_2  = v1_8_through_v1_12_2,
-			v1_9_3 = v1_8_through_v1_12_2, v1_9_4 = v1_8_through_v1_12_2,
-		v1_10  = v1_8_through_v1_12_2, v1_10_1 = v1_8_through_v1_12_2, v1_10_2 = v1_8_through_v1_12_2,
-		v1_11  = v1_8_through_v1_12_2, v1_11_1 = v1_8_through_v1_12_2, v1_11_2 = v1_8_through_v1_12_2,
-		v1_12  = v1_8_through_v1_12_2, v1_12_1 = v1_8_through_v1_12_2, v1_12_2 = v1_8_through_v1_12_2
+	/* All veins' sizes increased. Veins' interpolation lines became asymmetric. Diorite, andesite, and granite were added. */
+	// WARNING: Only 1.8, 1.8.9, and 1.9.4 have been decompiled and examined.
+	v1_8_through_v1_9_4,
+		v1_8 = v1_8_through_v1_9_4, v1_8_1 = v1_8_through_v1_9_4, v1_8_2 = v1_8_through_v1_9_4,
+			v1_8_3 = v1_8_through_v1_9_4, v1_8_4 = v1_8_through_v1_9_4, v1_8_5 = v1_8_through_v1_9_4,
+			v1_8_6 = v1_8_through_v1_9_4, v1_8_7 = v1_8_through_v1_9_4, v1_8_8 = v1_8_through_v1_9_4,
+			v1_8_9 = v1_8_through_v1_9_4,
+		v1_9 = v1_8_through_v1_9_4, v1_9_1 = v1_8_through_v1_9_4, v1_9_2 = v1_8_through_v1_9_4,
+			v1_9_3 = v1_8_through_v1_9_4, v1_9_4 = v1_8_through_v1_9_4,
+	/* Magma was added. */
+	// WARNING: Only 1.10 and 1.12.2 have been decompiled and examined.
+	v1_10_through_v1_12_2,
+		v1_10 = v1_10_through_v1_12_2, v1_10_1 = v1_10_through_v1_12_2, v1_10_2 = v1_10_through_v1_12_2,
+		v1_11 = v1_10_through_v1_12_2, v1_11_1 = v1_10_through_v1_12_2, v1_11_2 = v1_10_through_v1_12_2,
+		v1_12 = v1_10_through_v1_12_2, v1_12_1 = v1_10_through_v1_12_2, v1_12_2 = v1_10_through_v1_12_2
 };
 
 enum Biome {
@@ -88,6 +91,7 @@ struct InputData {
 	Material material;
 	// Biome biome;
 	Coordinate coordinate;
+	VeinStates defaultStateOutsideLayout;
 
 	// constexpr InputData() : version(), material(), biome(), coordinate() {}
 	// constexpr InputData(const Version version, const Material material, const Coordinate coordinate) : version(version), material(material), biome(), coordinate() {}
@@ -118,14 +122,14 @@ enum ExperimentalMaterial {
 enum ExperimentalVersion {
 	/* TODO: Infdev 20100325 - Infdev 20100624 could theoretically be used for coordinate-finding... */
 	// Infdev_20100325 = -5,
-	/* Chunk population was made worldseed-dependent. */
+	/* Vein generation was made worldseed-dependent. */
 	// WARNING: Only Infdev 20100625-1 and Alpha 1.0.0 have been verified to be identical after decompilation.
 	Infdev_20100625_1_through_Alpha_1_0_0 = -3,
 		Infdev_20100625_1 = Infdev_20100625_1_through_Alpha_1_0_0, Infdev_20100625_2 = Infdev_20100625_1_through_Alpha_1_0_0, 
 			Infdev_20100627 = Infdev_20100625_1_through_Alpha_1_0_0, Infdev_20100629 = Infdev_20100625_1_through_Alpha_1_0_0, 
 			Infdev_20100630 = Infdev_20100625_1_through_Alpha_1_0_0,
 		Alpha_1_0_0 = Infdev_20100625_1_through_Alpha_1_0_0,
-	/* Redstone was added. Diamond size was decreased from 8 to 7. */
+	/* Redstone was added. Diamond size was decreased. */
 	// WARNING: Only Alpha 1.0.1_01, Beta 1.0, Beta 1.1, and Beta 1.1_02 have been verified to be identical after decompilation.
 	Alpha_1_0_1_01_through_Beta_1_1_02 = -2,
 		Alpha_1_0_1_01 = Alpha_1_0_1_01_through_Beta_1_1_02, Alpha_1_0_2_01 = Alpha_1_0_1_01_through_Beta_1_1_02,
@@ -160,7 +164,7 @@ enum ExperimentalVersion {
 		Beta_1_4 = Beta_1_2_through_Beta_1_5_02, Beta_1_4_01 = Beta_1_2_through_Beta_1_5_02,
 		Beta_1_5 = Beta_1_2_through_Beta_1_5_02, Beta_1_5_01 = Beta_1_2_through_Beta_1_5_02, Beta_1_5_02 = Beta_1_2_through_Beta_1_5_02,
 	// Not supported yet
-	v1_13   = Version::v1_8_through_v1_12_2 + 1,
+	v1_13   = Version::v1_10_through_v1_12_2 + 1,
 	v1_16_5 = v1_13 + 1
 };
 
@@ -168,5 +172,11 @@ enum ExperimentalBiome {
 	Badlands = Biome::Default_or_Unknown + 1, Mesa = Badlands,
 	Basalt_Deltas,
 };
+
+// The various test data.
+#include "Test Data/Beta 1.4.cuh"
+#include "Test Data/Beta 1.6.cuh"
+#include "Test Data/1.7.9.cuh"
+#include "Test Data/1.8.9.cuh"
 
 #endif

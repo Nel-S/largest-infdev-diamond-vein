@@ -4,6 +4,7 @@
 #include "../core/C-C++-CUDA Support.h"
 #include <set>
 #include <string>
+#include <type_traits>
 
 /* ==========================================================================================
    CONSTEXPR HELPER FUNCTIONS in case one's STLs doesn't have them as constexpr (mine didn't)
@@ -22,7 +23,7 @@ __host__ __device__ [[nodiscard]] constexpr const T &constexprMax(const T &a, co
 // Swaps two elements in compilation-time.
 // TODO: Create backup for std::move in case it isn't constexpr on a device?
 template<class T>
-__device__ constexpr void constexprSwap(T &first, T &second) noexcept {
+__host__ __device__ constexpr void constexprSwap(T &first, T &second) noexcept {
 	auto __temp = std::move(first);
 	first = std::move(second);
 	second = std::move(__temp);
@@ -45,6 +46,15 @@ __host__ __device__ [[nodiscard]] constexpr int64_t constexprRound(double x) noe
 	return constexprFloor(x + 0.5);
 }
 
+// Returns the compile-time modulo of a real number by another real number.
+__host__ __device__ [[nodiscard]] constexpr double constexprFmod(double x, double n) {
+	return n ? x - n*static_cast<double>(constexprFloor(x/n)) : 0.;
+}
+// Returns in compile-time a real number shifted into the range [-halfWidth, halfWidth).
+__host__ __device__ [[nodiscard]] constexpr double modIntoHalfRange(double x, double halfWidth) {
+	return constexprFmod(x + halfWidth, 2.*halfWidth) - halfWidth;
+}
+
 /* Returns the compile-time factorial of a natural number.
    WARNING: this will overflow (and thus give results modulo 2^64 instead) for any value greater than 20.*/
 __host__ __device__ [[nodiscard]] constexpr uint64_t constexprFactorial(uint64_t n) noexcept {
@@ -52,7 +62,6 @@ __host__ __device__ [[nodiscard]] constexpr uint64_t constexprFactorial(uint64_t
 	for (uint64_t i = 2; i <= n; ++i) out *= i;
 	return out;
 }
-
 /* Returns the number of ways to choose k objects from a set of n objects, where the order the selections are made does not matter.
    WARNING: this will overflow (and thus give results modulo 2^64 instead) if n > 40 and k > 20.*/
 // TODO: Tighten bound in description
@@ -62,6 +71,8 @@ __host__ __device__ [[nodiscard]] constexpr uint64_t constexprCombination(uint64
 	return out/constexprFactorial(constexprMin(k, n - k));
 }
 
+constexpr double E = 2.718281828459045;
+
 /* Returns a compile-time *approximation* of e^x. (I.e. this becomes less accurate the further one drifts from 0.)
    Adapted from Nayuki on Wikipedia (https://en.wikipedia.org/w/index.php?diff=2860008).*/
 __host__ __device__ [[nodiscard]] constexpr double constexprExp(double x) noexcept {
@@ -69,7 +80,6 @@ __host__ __device__ [[nodiscard]] constexpr double constexprExp(double x) noexce
 	for (uint64_t i = 25; i; --i) approximation = 1. + x*approximation/i;
 	return approximation;
 }
-
 /* Returns a compile-time *approximation* of ln(x). (I.e. this becomes less accurate the further one drifts from 0.)
    From JRSpriggs on Wikipedia (https://en.wikipedia.org/w/index.php?diff=592947838).*/
 __host__ __device__ [[nodiscard]] constexpr double constexprLog(double x) noexcept {
@@ -80,7 +90,6 @@ __host__ __device__ [[nodiscard]] constexpr double constexprLog(double x) noexce
 	}
 	return approximation;
 }
-
 /* Returns a compile-time *approximation* of log_2(x). (I.e. this becomes less accurate the further one drifts from 0.)
    From David Eppstein on Wikipedia (https://en.wikipedia.org/w/index.php?diff=629917843).*/
 __host__ __device__ [[nodiscard]] constexpr double constexprLog2(double x) noexcept {
@@ -89,9 +98,11 @@ __host__ __device__ [[nodiscard]] constexpr double constexprLog2(double x) noexc
 
 constexpr double PI = 3.1415926535897932384626433;
 
-/* Returns a compile-time *approximation* of sin(x).*/
+/* Returns a compile-time *approximation* of sin(x). (I.e. this becomes less accurate the closer one drifts to |x| = pi.)*/
 __host__ __device__ [[nodiscard]] constexpr double constexprSin(double x) {
-	// TODO: Standardize x between [-pi/2, pi/2]
+	// Sine is periodic beyond the interval [-pi, pi)
+	x = modIntoHalfRange(x, PI);
+	// if (x == -PI) return 0.;
 	double approximation = x, nextTerm = x;
 	for (uint64_t i = 1; i < 25; ++i) {
 		nextTerm *= -x/(2.*static_cast<double>(i))*x/(2.*static_cast<double>(i) + 1.);
@@ -99,10 +110,23 @@ __host__ __device__ [[nodiscard]] constexpr double constexprSin(double x) {
 	}
 	return approximation;
 }
-
-/* Returns a compile-time *approximation* of cos(x).*/
+/* Returns a compile-time *approximation* of sin^-1(x). (I.e. this becomes less accurate the further one drifts from 0.)*/
+__host__ __device__ [[nodiscard]] constexpr double constexprArcsin(double x) {
+	// The correct values would be -INFINITY and INFINITY, but constexpr doubles do not support INFINITY
+	if (x <= -1.) return -PI/2.;
+	if (x >=  1.) return  PI/2.;
+	double approximation = x, nextTerm = x;
+	// TODO: Find way to increase the number of iterations without the nextTerm calculation overflowing into INFINITY
+	for (uint64_t i = 1; i < 10; ++i) {
+		nextTerm *= x*(2.*static_cast<double>(i) - 1.)/(2.*static_cast<double>(i))*x*(2.*static_cast<double>(i) - 1.)/(2.*static_cast<double>(i) + 1.);
+		approximation += nextTerm;
+	}
+	return approximation;
+}
+/* Returns a compile-time *approximation* of cos(x). (I.e. this becomes less accurate the further one drifts from 0.)*/
 __host__ __device__ [[nodiscard]] constexpr double constexprCos(double x) {
-	// TODO: Standardize x between [-pi/2, pi/2]
+	// Cosine is periodic beyond the interval [-pi, pi)
+	x = modIntoHalfRange(x, PI);
 	double approximation = 1, nextTerm = 1;
 	for (uint64_t i = 1; i < 25; ++i) {
 		nextTerm *= -x/(2.*static_cast<double>(i) - 1.)*x/(2.*static_cast<double>(i));
@@ -110,8 +134,10 @@ __host__ __device__ [[nodiscard]] constexpr double constexprCos(double x) {
 	}
 	return approximation;
 }
-
-constexpr auto a = constexprCos(PI);
+/* Returns a compile-time *approximation* of cos^-1(x).*/
+__host__ __device__ [[nodiscard]] constexpr double constexprArccos(double x) {
+	return PI/2. - constexprArcsin(x);	
+}
 
 /* =====================
    BIT-RELATED FUNCTIONS
@@ -121,17 +147,14 @@ constexpr auto a = constexprCos(PI);
 __host__ __device__ [[nodiscard]] constexpr uint64_t twoToThePowerOf(uint32_t bits) noexcept {
 	return UINT64_C(1) << bits;
 }
-
 // Returns a [bits]-bit-wide mask.
 __host__ __device__  [[nodiscard]] constexpr uint64_t getBitmask(uint32_t bits) noexcept {
 	return twoToThePowerOf(bits) - UINT64_C(1);
 }
-
 // Returns the lowest [bits] bits of value.
 __host__ __device__  [[nodiscard]] constexpr uint64_t getLowestBitsOf(uint64_t value, uint32_t bits) noexcept {
 	return value & getBitmask(bits);
 }
-
 // Returns x such that value * x == 1 (mod 2^64).
 __host__ __device__  [[nodiscard]] constexpr uint64_t inverseModulo(uint64_t value) noexcept {
 	uint64_t x = ((value << 1 ^ value) & 4) << 1 ^ value;
@@ -140,7 +163,6 @@ __host__ __device__  [[nodiscard]] constexpr uint64_t inverseModulo(uint64_t val
 	x += x - value * x * x;
 	return x + (x - value * x * x);
 }
-
 // Returns the number of trailing zeroes in value.
 __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfTrailingZeroes(uint64_t value) noexcept {
 	if (!value) return 64;
@@ -148,7 +170,6 @@ __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfTrailingZeroes(
 	for (uint64_t v = value; !(v & 1); v >>= 1) ++count;
 	return count;
 }
-
 // Returns the number of leading zeroes in value.
 __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfLeadingZeroes(uint64_t value) noexcept {
 	if (!value) return 64;
@@ -156,7 +177,7 @@ __host__ __device__  [[nodiscard]] constexpr uint32_t getNumberOfLeadingZeroes(u
 	for (uint64_t v = value; !(v & twoToThePowerOf(63)); v <<= 1) ++count;
 	return count;
 }
-
+// Returns the number of ones in value.
 __host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(uint32_t x) noexcept {
 	uint32_t count = 0;
 	for (uint32_t i = x; static_cast<bool>(i); i >>= 1) count += static_cast<uint32_t>(i & 1);
@@ -167,6 +188,26 @@ __host__ __device__ [[nodiscard]] constexpr uint32_t getNumberOfOnesIn(uint32_t 
 /* ===============
    ARRAY FUNCTIONS
    =============== */
+
+/* Orders the elements of an array in compile-time.
+   TODO: Replace with Quicksort*/
+template <class T>
+constexpr void constexprOrder(T *array, size_t numberOfEntries, bool reverse = false) {
+	for (size_t i = 0; i < numberOfEntries - 1; ++i) {
+		for (size_t j = i + 1; j < numberOfEntries; ++j) {
+			if (reverse ? array[i] < array[j] : array[j] < array[i]) constexprSwap(array[i], array[j]);
+		}
+	}
+}
+
+// template <class T>
+// constexpr void constexprOrder2(T *array, size_t numberOfEntries, bool reverse = false) {
+// 	T &pivot = *array;
+// 	// ...
+// 	size_t half = static_cast<size_t>(constexprCeil(numberOfEntries/2.));
+// 	constexprOrder2(array, half, reverse);
+// 	constexprOrder2(array + half, numberOfEntries - half, reverse);
+// }
 
 // Transfers entries from one source to another. Effectively cross-platform cudaMemcpy/memcpy.
 template <class T>
@@ -261,9 +302,26 @@ template <class T> struct InclusiveRange {
 		return (this->lowerBound <= value && value <= this->upperBound) == !this->inverted;
 	}
 
+	// __host__ __device__ [[nodiscard]] T *begin() const {
+	// 	return &this->lowerBound;
+	// }
+
+	// __host__ __device__ [[nodiscard]] const T *begin() const {
+	// 	return &this->lowerBound;
+	// }
+
+	// __host__ __device__ [[nodiscard]] T *end() const {
+	// 	return &this->upperBound + 1;
+	// }
+
+	// __host__ __device__ [[nodiscard]] const T *end() const {
+	// 	return &this->upperBound + 1;
+	// }
+
 	// Returns the range's range.
-	__host__ __device__ [[nodiscard]] constexpr const T &getRange() const noexcept {
-		return this->upperBound - this->lowerBound + 1;
+	__host__ __device__ [[nodiscard]] constexpr T getRange() const noexcept {
+		// A 1 needs to be added iff the objects are integers (e.g. [1, 3] has range 3 while [0.2, 0.8] has range 0.6)
+		return this->upperBound - this->lowerBound + std::is_integral_v<T>;
 	}
 };
 

@@ -7,6 +7,8 @@ __device__ constexpr InputData TEST_DATA_1_7_9__1 = {
 	Version::v1_7_9,
 	Material::Dirt,
 	{2 + (-150 - 14), 78 + (93 - 91), 16 + (143 - 36)},
+	// The default state outside of the input layout.
+	VeinStates::Unknown,
 };
 constexpr VeinStates TEST_DATA_1_7_9__1_LAYOUT[][9][5] = {
 	{ // -y
