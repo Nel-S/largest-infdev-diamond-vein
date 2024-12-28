@@ -1,14 +1,20 @@
-#ifndef __GENERATE_AND_VALIDATE_DATA_CUH
-#define __GENERATE_AND_VALIDATE_DATA_CUH
+#ifndef __VEINS__INPUT_DATA_PROCESSING_CUH
+#define __VEINS__INPUT_DATA_PROCESSING_CUH
 
-#include "..\Settings (MODIFY THIS).cuh"
-#include "Veins Logic.cuh"
+#include "..\..\Settings and Input Data (MODIFY THIS).cuh"
+#include "..\General\General Settings Processing.cuh"
+#include "Underlying Logic.cuh"
 
+#if defined(VEIN_INPUT_DATA) && defined(VEIN_INPUT_DATA_LAYOUT)
+	#define VEIN_DATA_PROVIDED
+#endif
+
+#ifdef VEIN_DATA_PROVIDED
 // Shorthand for input dimensions, which are referenced often
 constexpr Coordinate INPUT_DIMENSIONS = {
-	static_cast<int32_t>(sizeof(**INPUT_DATA_LAYOUT)/sizeof(***INPUT_DATA_LAYOUT)),
-	static_cast<int32_t>(sizeof(  INPUT_DATA_LAYOUT)/sizeof(  *INPUT_DATA_LAYOUT)),
-	static_cast<int32_t>(sizeof( *INPUT_DATA_LAYOUT)/sizeof( **INPUT_DATA_LAYOUT))
+	static_cast<int32_t>(sizeof(**VEIN_INPUT_DATA_LAYOUT)/sizeof(***VEIN_INPUT_DATA_LAYOUT)),
+	static_cast<int32_t>(sizeof(  VEIN_INPUT_DATA_LAYOUT)/sizeof(  *VEIN_INPUT_DATA_LAYOUT)),
+	static_cast<int32_t>(sizeof( *VEIN_INPUT_DATA_LAYOUT)/sizeof( **VEIN_INPUT_DATA_LAYOUT))
 };
 
 
@@ -17,11 +23,11 @@ constexpr Coordinate INPUT_DIMENSIONS = {
    	and a __managed__ or __constant__ variable can't be set as constexpr.
    From Google's AI Overview*/
 template <size_t Y, size_t Z, size_t X> struct InputLayoutCopy {
-	VeinStates copy[Y][Z][X];
+	VeinState copy[Y][Z][X];
 	__host__ __device__ constexpr InputLayoutCopy() : copy() {
 		for (int32_t y = 0; y < Y; ++y) {
 			for (int32_t z = 0; z < Z; ++z) {
-				for (int32_t x = 0; x < X; ++x) copy[y][z][x] = INPUT_DATA_LAYOUT[y][z][x];
+				for (int32_t x = 0; x < X; ++x) copy[y][z][x] = VEIN_INPUT_DATA_LAYOUT[y][z][x];
 			}
 		}
 	}
@@ -31,11 +37,11 @@ __device__ constexpr InputLayoutCopy<INPUT_DIMENSIONS.y, INPUT_DIMENSIONS.z, INP
 
 
 // Returns whether the given region of the input data contains a specified state.
-constexpr bool inputLayoutPortionContains(const VeinStates state, const Pair<Coordinate> &rangeToCheck) {
+constexpr bool inputLayoutPortionContains(const VeinState state, const Pair<Coordinate> &rangeToCheck) {
 	for (size_t y = rangeToCheck.first.y; y <= rangeToCheck.second.y; ++y) {
 		for (size_t z = rangeToCheck.first.z; z <= rangeToCheck.second.z; ++z) {
 			for (size_t x = rangeToCheck.first.x; x <= rangeToCheck.second.x; ++x) {
-				if (INPUT_DATA_LAYOUT[y][z][x] == state) return true;
+				if (VEIN_INPUT_DATA_LAYOUT[y][z][x] == state) return true;
 			}
 		}
 	}
@@ -52,7 +58,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMaxX = range.second.x;
 	for (; range.first.x <= savedMaxX; ++range.first.x) {
 		range.second.x = range.first.x;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.second.x = savedMaxX;
 	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
@@ -61,7 +67,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMinX = range.first.x;
 	for (; savedMinX <= range.second.x; --range.second.x) {
 		range.first.x = range.second.x;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.first.x = savedMinX;
 	if (range.second.x < range.first.x) throw std::invalid_argument("Input data contained no vein blocks, or an invalid x-dimension was specified.");
@@ -70,7 +76,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMaxY = range.second.y;
 	for (; range.first.y <= savedMaxY; ++range.first.y) {
 		range.second.y = range.first.y;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.second.y = savedMaxY;
 	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
@@ -79,7 +85,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMinY = range.first.y;
 	for (; savedMinY <= range.second.y; --range.second.y) {
 		range.first.y = range.second.y;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.first.y = savedMinY;
 	if (range.second.y < range.first.y) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
@@ -88,7 +94,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMaxZ = range.second.z;
 	for (; range.first.z <= savedMaxZ; ++range.first.z) {
 		range.second.z = range.first.z;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.second.z = savedMaxZ;
 	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid z-dimension was specified.");
@@ -98,7 +104,7 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 	int32_t savedMinZ = range.first.z;
 	for (; savedMinZ <= range.second.z; --range.second.z) {
 		range.first.z = range.second.z;
-		if (inputLayoutPortionContains(VeinStates::Vein, range)) break;
+		if (inputLayoutPortionContains(VeinState::Vein, range)) break;
 	}
 	range.first.z = savedMinZ;
 	if (range.second.z < range.first.z) throw std::invalid_argument("Input data contained no vein blocks, or an invalid y-dimension was specified.");
@@ -110,9 +116,9 @@ constexpr Pair<Coordinate> getVeinOnlyBoundingBox() {
 constexpr Pair<Coordinate> KNOWN_INPUT_VEIN_BOUNDING_BOX = getVeinOnlyBoundingBox();
 // The coordinate corresponding to the -x/-y/-z corner of the vein's bounding box.
 constexpr Coordinate KNOWN_VEIN_INPUT_COORDINATE = {
-	INPUT_DATA.coordinate.x + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.x,
-	INPUT_DATA.coordinate.y + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.y,
-	INPUT_DATA.coordinate.z + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.z
+	VEIN_INPUT_DATA.coordinate.x + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.x,
+	VEIN_INPUT_DATA.coordinate.y + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.y,
+	VEIN_INPUT_DATA.coordinate.z + KNOWN_INPUT_VEIN_BOUNDING_BOX.first.z
 };
 // The dimensions of the vein's bounding box.
 constexpr Coordinate KNOWN_VEIN_INPUT_DIMENSIONS = {
@@ -125,18 +131,18 @@ static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.y && KNOWN_VEIN_INPUT_DIMENSIONS.
 static_assert(1 <= KNOWN_VEIN_INPUT_DIMENSIONS.z && KNOWN_VEIN_INPUT_DIMENSIONS.z <= INPUT_DIMENSIONS.z, "Data results in an impossible vein bounding box in the z-direction.");
 
 
-constexpr bool USE_POPULATION_OFFSET = INPUT_DATA.version <= Version::v1_10_through_v1_12_2;
+constexpr bool USE_POPULATION_OFFSET = VEIN_INPUT_DATA.version <= Version::v1_12_2;
 
-constexpr InclusiveRange<int32_t> Y_BOUNDS = getWorldYRange(INPUT_DATA.version);
+constexpr InclusiveRange<int32_t> Y_BOUNDS = getWorldYRange(VEIN_INPUT_DATA.version);
 
-constexpr int32_t VEIN_SIZE = getVeinSize(INPUT_DATA.material, INPUT_DATA.version);
-constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinYRange(INPUT_DATA.material, INPUT_DATA.version);
+constexpr int32_t VEIN_SIZE = getVeinSize(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
+constexpr InclusiveRange<int32_t> VEIN_RANGE = getVeinYRange(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
 static_assert(!((VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound) & (VEIN_RANGE.upperBound - VEIN_RANGE.lowerBound - 1)), "Features with non-power-of-two ranges are not yet supported.");
-constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(INPUT_DATA.material, INPUT_DATA.version);
+constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
 static_assert(!VEIN_USES_TRIANGULAR_DISTRIBUTION, "Features with triangular distributions are not yet supported.");
 
 // The bounding box the generation point can lay within, based on the dimensions of the vein alone.
-__device__ constexpr Pair<Coordinate> VEIN_GENERATION_POINT_BOUNDING_BOX = getVeinGenerationPointBoundingBox(KNOWN_INPUT_VEIN_BOUNDING_BOX, KNOWN_VEIN_INPUT_COORDINATE, INPUT_DATA.material, INPUT_DATA.version);
+__device__ constexpr Pair<Coordinate> VEIN_GENERATION_POINT_BOUNDING_BOX = getVeinGenerationPointBoundingBox(KNOWN_INPUT_VEIN_BOUNDING_BOX, KNOWN_VEIN_INPUT_COORDINATE, VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.x <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.x, "Data results in an impossible generation point bounding box in the x-direction.");
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.y <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.y, "Data results in an impossible generation point bounding box in the y-direction.");
 static_assert(VEIN_GENERATION_POINT_BOUNDING_BOX.first.z <= VEIN_GENERATION_POINT_BOUNDING_BOX.second.z, "Data results in an impossible generation point bounding box in the z-direction.");
@@ -187,11 +193,11 @@ __device__ constexpr ChunksToExamine CHUNKS_TO_EXAMINE;
 constexpr [[nodiscard]] Pair<InclusiveRange<float>> getAngleBounds() {
 	InclusiveRange<float> lower(0.f, 0.5f), upper(0.5f, 1.f);
 	// Calculations haven't been done for Beta 1.5.02- generation
-	if (INPUT_DATA.version <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02) return {lower, upper};
+	if (VEIN_INPUT_DATA.version <= Version::Beta_1_5_02) return {lower, upper};
 
-	int32_t veinSize = getVeinSize(INPUT_DATA.material, INPUT_DATA.version);
-	Coordinate maxVeinDimensions = getMaxVeinDimensions_coordinateIndependent(INPUT_DATA.material, INPUT_DATA.version);
-	constexpr Pair<InclusiveRange<int32_t>> ANGLE_INDEX_RANGES = getAngleIndexRanges(INPUT_DATA.material, INPUT_DATA.version);
+	int32_t veinSize = getVeinSize(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
+	Coordinate maxVeinDimensions = getMaxVeinDimensions_coordinateIndependent(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
+	constexpr Pair<InclusiveRange<int32_t>> ANGLE_INDEX_RANGES = getAngleIndexRanges(VEIN_INPUT_DATA.material, VEIN_INPUT_DATA.version);
 	
 	constexpr size_t TOTAL_ANGLE_INDICES = ANGLE_INDEX_RANGES.first.getRange() + ANGLE_INDEX_RANGES.second.getRange();
 	// TODO: Rewrite without needing an array, which can then be made input-data-independent
@@ -201,7 +207,7 @@ constexpr [[nodiscard]] Pair<InclusiveRange<float>> getAngleBounds() {
 	for (int32_t direction = 0; direction <= 1; ++direction) {
 		size_t i = 0;
 		/* Since the */ 
-		for (int32_t angleIndex = ANGLE_INDEX_RANGES.first.lowerBound; angleIndex <= ANGLE_INDEX_RANGES.first.upperBound; ++angleIndex, ++i) changeAngles[i] = (direction ? constexprArccos : constexprArcsin)(((constexprSin((1 - static_cast<double>(Version::v1_8_through_v1_9_4 <= INPUT_DATA.version)/veinSize)*PI) + 1.)*veinSize/4.*MAX_DOUBLE_IN_RANGE + 4. + 8.*angleIndex)/(2.*static_cast<double>(Version::v1_8_through_v1_9_4 <= INPUT_DATA.version) - veinSize))/PI;
+		for (int32_t angleIndex = ANGLE_INDEX_RANGES.first.lowerBound; angleIndex <= ANGLE_INDEX_RANGES.first.upperBound; ++angleIndex, ++i) changeAngles[i] = (direction ? constexprArccos : constexprArcsin)(((constexprSin((1 - static_cast<double>(Version::v1_8 <= VEIN_INPUT_DATA.version)/veinSize)*PI) + 1.)*veinSize/4.*MAX_DOUBLE_IN_RANGE + 4. + 8.*angleIndex)/(2.*static_cast<double>(Version::v1_8 <= VEIN_INPUT_DATA.version) - veinSize))/PI;
 		for (int32_t angleIndex = ANGLE_INDEX_RANGES.second.lowerBound; angleIndex <= ANGLE_INDEX_RANGES.second.upperBound; ++angleIndex, ++i) changeAngles[i] = (direction ? constexprArccos : constexprArcsin)(-MAX_DOUBLE_IN_RANGE/4. - 4./veinSize*(1. - 2.*angleIndex))/PI;
 		changeAngles[TOTAL_ANGLE_INDICES] = 0.5*direction;
 		constexprOrder(changeAngles, TOTAL_ANGLE_INDICES + 1, !direction);
@@ -231,22 +237,6 @@ constexpr uint64_t ACTUAL_STORAGE_CAPACITY = constexprMin(MAX_RESULTS_PER_FILTER
 __device__ uint64_t STORAGE_ARRAY[ACTUAL_STORAGE_CAPACITY];
 __managed__ size_t storageArraySize = 0;
 
-
-struct EstimatedResults {
-	uint64_t chunk[TOTAL_NUMBER_OF_POSSIBLE_CHUNKS];
-	__device__ constexpr EstimatedResults() : chunk() {
-		for (int32_t i = 0; i < TOTAL_NUMBER_OF_POSSIBLE_CHUNKS; ++i) {
-			this->chunk[i] = static_cast<uint64_t>(static_cast<double>(twoToThePowerOf(48)) *
-				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.x - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.x + 1)/16. *
-				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.y - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.y + 1)/static_cast<double>(Y_BOUNDS.getRange()) *
-				(CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].second.z - CHUNKS_TO_EXAMINE.generationPointNextIntRanges[i].first.z + 1)/16. *
-				static_cast<double>(ANGLE_BOUNDS.first.getRange()) *
-				static_cast<double>(ANGLE_BOUNDS.second.getRange())
-			);
-		}
-	}
-};
-__device__ constexpr EstimatedResults estimatedResults;
-// static_assert(estimatedResults.chunk[0]/static_cast<double>(GLOBAL_ITERATIONS_NEEDED) <= ACTUAL_STORAGE_CAPACITY, "");
+#endif
 
 #endif

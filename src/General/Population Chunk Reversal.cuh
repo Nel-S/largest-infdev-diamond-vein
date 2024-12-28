@@ -1,7 +1,7 @@
 #ifndef __CHUNK_RANDOM_REVERSAL_CUH
 #define __CHUNK_RANDOM_REVERSAL_CUH
 
-#include "Settings and Input Data Processing.cuh"
+#include "General Settings Processing.cuh"
 #include <set>
 
 constexpr const uint64_t FORWARD_2_MULTIPLIER = UINT64_C(205749139540585);
@@ -18,7 +18,7 @@ template <int64_t N = 0> [[nodiscard]] uint64_t getPopulationSeed(const uint64_t
 	Random random(structureSeed);
 	random.skip<N>();
 	uint64_t a, b;
-	if (version <= Version::v1_8_through_v1_12_2) {
+	if (version <= Version::v1_12_2) {
 		a = static_cast<uint64_t>(random.nextLong() / INT64_C(2) * INT64_C(2) + INT64_C(1));
 		b = static_cast<uint64_t>(random.nextLong() / INT64_C(2) * INT64_C(2) + INT64_C(1));
 	} else {
@@ -29,7 +29,7 @@ template <int64_t N = 0> [[nodiscard]] uint64_t getPopulationSeed(const uint64_t
 }
 
 constexpr [[nodiscard]] InclusiveRange<uint64_t> getPopulationCallsRange(/*const Biome biome,*/ const Version version) {
-	if (Version::v1_8_through_v1_12_2 < version) return {UINT64_C(0), UINT64_C(1)};
+	if (Version::v1_13 <= version) return {UINT64_C(0), UINT64_C(1)};
 	switch (version) {
 		case Version::v1_8_9:
 			return InclusiveRange<uint64_t>{constexprMax(UINT64_C(3039) - PRE_1_12_TEMP_MAX_POPULATION_CALLS, UINT64_C(0)), UINT64_C(3111) + PRE_1_12_TEMP_MAX_POPULATION_CALLS};
@@ -40,8 +40,8 @@ constexpr [[nodiscard]] InclusiveRange<uint64_t> getPopulationCallsRange(/*const
 /* Returns the list of, and number of, possible offsets related to population seeds.
    These are possible displacements that arise from the population seed formula turning both nextLongs into odd integers. 1.12- rounds the nextLongs, meaning there are up to 3^2 = 9 possible combinations that could have occurred internally; 1.13+ sets the last bit to 1, meaning there are up to 2^2 = 4 possible combinations.*/
 void getInternalPopulationOffsets(uint64_t *offsets, uint32_t *offsetsLength, const int32_t x, const int32_t z, const Version version) {
-	for (uint64_t i = 0; i < 2 + (version <= Version::v1_8_through_v1_12_2); ++i) {
-		for (uint64_t j = 0; j < 2 + (version <= Version::v1_8_through_v1_12_2); ++j) {
+	for (uint64_t i = 0; i < 2 + (version <= Version::v1_12_2); ++i) {
+		for (uint64_t j = 0; j < 2 + (version <= Version::v1_12_2); ++j) {
 			uint64_t offset = static_cast<uint64_t>(x) * i + static_cast<uint64_t>(z) * j;
 
 			for (uint32_t k = 0; k < *offsetsLength; ++k) {

@@ -1,19 +1,20 @@
-#include "../Allowed Values for Settings.cuh"
+#include "../Allowed Values for Input Data.cuh"
 
 // Internal state: ?? (in chunk (?, ?))
 // Structure seed: 15179077681579 (with ?? advancements)
-__device__ constexpr InputData TEST_DATA_BETA_1_4__1 = {
+__device__ constexpr VeinsInputData VEINS_TEST_DATA_BETA_1_4__1 = {
+	CrackerType::Veins,
 	// The version that the vein was generated within.
-	static_cast<Version>(ExperimentalVersion::Beta_1_4),
+	Version::Beta_1_4,
 	// The material of the vein.
-	Material::Dirt,
+	VeinMaterial::Dirt,
 	// The coordinate corresponding to the first top-most corner in the input layout below (the -x/-y/-z corner).
 	{-336, 34, 86},
 	// The default state outside of the input layout.
-	VeinStates::Stone,
+	VeinState::Stone,
 };
 // Note: Don't get your x-directions, y-directions, and z-directions mixed up.
-constexpr VeinStates TEST_DATA_BETA_1_4__1_LAYOUT[][7][8] = {
+constexpr VeinState VEINS_TEST_DATA_BETA_1_4__1_LAYOUT[][7][8] = {
 	{ // -y
 		// -x                +x
 		{_, _, _, _, _, _, _, _}, // -z

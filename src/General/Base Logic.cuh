@@ -1,7 +1,7 @@
 #ifndef __BASE_CUH
 #define __BASE_CUH
 
-#include "../core/C-C++-CUDA Support.h"
+#include "core/C-C++-CUDA Support.h"
 #include <set>
 #include <string>
 #include <type_traits>

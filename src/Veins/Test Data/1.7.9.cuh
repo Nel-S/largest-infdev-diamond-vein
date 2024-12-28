@@ -1,16 +1,17 @@
-#include "../Allowed Values for Settings.cuh"
+#include "../Allowed Values for Input Data.cuh"
 
 // Internal state: ?? in chunk (?, ?)
 // Structure seed: ?? (with ?? advancements)
 // From the Flag on a Mountain seed
-__device__ constexpr InputData TEST_DATA_1_7_9__1 = {
+__device__ constexpr VeinsInputData VEINS_TEST_DATA_1_7_9__1 = {
+	CrackerType::Veins,
 	Version::v1_7_9,
-	Material::Dirt,
+	VeinMaterial::Dirt,
 	{2 + (-150 - 14), 78 + (93 - 91), 16 + (143 - 36)},
 	// The default state outside of the input layout.
-	VeinStates::Unknown,
+	VeinState::Unknown,
 };
-constexpr VeinStates TEST_DATA_1_7_9__1_LAYOUT[][9][5] = {
+constexpr VeinState VEINS_TEST_DATA_1_7_9__1_LAYOUT[][9][5] = {
 	{ // -y
 		// -x          +x
 		{u, u, u, u, u}, // -z

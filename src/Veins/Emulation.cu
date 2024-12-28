@@ -1,7 +1,7 @@
-#include "src/Veins Logic.cuh"
+#include "src/Veins/Underlying Logic.cuh"
 #include <unordered_set>
 
-constexpr Material MATERIAL = Material::Dirt;
+constexpr VeinMaterial MATERIAL = VeinMaterial::Dirt;
 constexpr Version VERSION = Version::v1_7_9;
 constexpr Pair<int32_t> ORIGIN_CHUNK = {-11, 7};
 constexpr uint64_t INITIAL_INTERNAL_STATE = 228734195037066;
@@ -23,11 +23,11 @@ constexpr Pair<Coordinate> MAX_VEIN_DISPLACEMENT = getMaxVeinBlockDisplacement_c
 constexpr Coordinate MAX_VEIN_DIMENSIONS = getMaxVeinDimensions_coordinateIndependent(MATERIAL, VERSION);
 constexpr bool VEIN_USES_TRIANGULAR_DISTRIBUTION = veinUsesTriangularDistribution(MATERIAL, VERSION);
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Minus(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Minus(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinState::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -47,10 +47,10 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 	double maxZ = static_cast<double>(static_cast<float>(veinGenerationPoint.z + 8) + cosf(angle)*static_cast<float>(VEIN_SIZE)/8.f);
 	double minZ = static_cast<double>(static_cast<float>(veinGenerationPoint.z + 8) - cosf(angle)*static_cast<float>(VEIN_SIZE)/8.f);
 
-	double y1 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2));
-	double y2 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2));
+	double y1 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_7_3 ? 2 : -2));
+	double y2 = static_cast<double>(veinGenerationPoint.y + random.nextInt(3) + (VERSION <= Version::Beta_1_7_3 ? 2 : -2));
 
-	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_2_through_v1_7_10); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_10); ++k) {
 		float interpoland = static_cast<float>(k)/static_cast<float>(VEIN_SIZE);
 		double xInterpolation = maxX + (minX - maxX) * static_cast<double>(interpoland);
 		double yInterpolation = y1 + (y2 - y1) * static_cast<double>(interpoland);
@@ -58,12 +58,12 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 		double commonDiameterTerm = random.nextDouble() * static_cast<double>(VEIN_SIZE)/16.;
 		double horizontalMaxDiameter = static_cast<double>(sinf(static_cast<float>(PI)*interpoland) + 1.f)*commonDiameterTerm + 1.;
 		double verticalMaxDiameter = static_cast<double>(sinf(static_cast<float>(PI)*interpoland) + 1.f)*commonDiameterTerm + 1.;
-		int32_t xStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation - horizontalMaxDiameter/2. : floor(xInterpolation - horizontalMaxDiameter/2.));
-		int32_t yStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation - verticalMaxDiameter/2. : floor(yInterpolation - verticalMaxDiameter/2.));
-		int32_t zStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation - horizontalMaxDiameter/2. : floor(zInterpolation - horizontalMaxDiameter/2.));
-		int32_t xEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation + horizontalMaxDiameter/2. : floor(xInterpolation + horizontalMaxDiameter/2.));
-		int32_t yEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation + verticalMaxDiameter/2. : floor(yInterpolation + verticalMaxDiameter/2.));
-		int32_t zEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation + horizontalMaxDiameter/2. : floor(zInterpolation + horizontalMaxDiameter/2.));
+		int32_t xStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? xInterpolation - horizontalMaxDiameter/2. : floor(xInterpolation - horizontalMaxDiameter/2.));
+		int32_t yStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? yInterpolation - verticalMaxDiameter/2. : floor(yInterpolation - verticalMaxDiameter/2.));
+		int32_t zStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? zInterpolation - horizontalMaxDiameter/2. : floor(zInterpolation - horizontalMaxDiameter/2.));
+		int32_t xEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? xInterpolation + horizontalMaxDiameter/2. : floor(xInterpolation + horizontalMaxDiameter/2.));
+		int32_t yEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? yInterpolation + verticalMaxDiameter/2. : floor(yInterpolation + verticalMaxDiameter/2.));
+		int32_t zEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? zInterpolation + horizontalMaxDiameter/2. : floor(zInterpolation + horizontalMaxDiameter/2.));
 
 		for (int32_t x = xStart; x <= xEnd; ++x) {
 			double vectorX = (static_cast<double>(x) + 0.5 - xInterpolation)/(horizontalMaxDiameter/2.);
@@ -82,7 +82,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 					size_t xIndex = static_cast<size_t>(x - veinCoordinate.x);
 					size_t yIndex = static_cast<size_t>(y - veinCoordinate.y);
 					size_t zIndex = static_cast<size_t>(z - veinCoordinate.z);
-					vein[yIndex][zIndex][xIndex] = VeinStates::Vein;
+					vein[yIndex][zIndex][xIndex] = VeinState::Vein;
 				}
 			}
 		}
@@ -91,11 +91,11 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_12_2_Min
 }
 
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2_Minus(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2_Minus(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinState::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -127,21 +127,21 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 	angle *= PI;
 	double maxX = sin(angle)*static_cast<double>(VEIN_SIZE)/8.;
 	double maxZ = cos(angle)*static_cast<double>(VEIN_SIZE)/8.;
-	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_2_through_v1_7_10); ++k) {
+	for (int32_t k = 0; k < VEIN_SIZE + (VERSION <= Version::v1_7_10); ++k) {
 		double interpoland = static_cast<double>(k)/static_cast<double>(VEIN_SIZE);
 		// Linearly interpolates between -sin(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8.; y1 and y2; and -cos(f)*VEIN_SIZE/8. and sin(f)*VEIN_SIZE/8..
 		double xInterpolation = static_cast<double>(veinGenerationPoint.x) + maxX*(1. - 2.*interpoland);
-		double yInterpolation = static_cast<double>(veinGenerationPoint.y) + static_cast<double>(y1) + static_cast<double>(y2 - y1) * interpoland + (VERSION <= Version::Beta_1_6_through_Beta_1_7_3 ? 2 : -2);
+		double yInterpolation = static_cast<double>(veinGenerationPoint.y) + static_cast<double>(y1) + static_cast<double>(y2 - y1) * interpoland + (VERSION <= Version::Beta_1_7_3 ? 2 : -2);
 		double zInterpolation = static_cast<double>(veinGenerationPoint.z) + maxZ*(1. - 2.*interpoland);
 		double maxRadius = (sin(PI*interpoland) + 1.)*static_cast<double>(VEIN_SIZE)/32.*random.nextDouble() + 0.5;
 		double maxRadiusSquared = maxRadius*maxRadius;
 
-		int32_t xStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation - maxRadius : floor(xInterpolation - maxRadius));
-		int32_t yStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation - maxRadius : floor(yInterpolation - maxRadius));
-		int32_t zStart = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation - maxRadius : floor(zInterpolation - maxRadius));
-		int32_t xEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? xInterpolation + maxRadius : floor(xInterpolation + maxRadius));
-		int32_t yEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? yInterpolation + maxRadius : floor(yInterpolation + maxRadius));
-		int32_t zEnd   = static_cast<int32_t>(VERSION <= ExperimentalVersion::Beta_1_2_through_Beta_1_5_02 ? zInterpolation + maxRadius : floor(zInterpolation + maxRadius));
+		int32_t xStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? xInterpolation - maxRadius : floor(xInterpolation - maxRadius));
+		int32_t yStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? yInterpolation - maxRadius : floor(yInterpolation - maxRadius));
+		int32_t zStart = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? zInterpolation - maxRadius : floor(zInterpolation - maxRadius));
+		int32_t xEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? xInterpolation + maxRadius : floor(xInterpolation + maxRadius));
+		int32_t yEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? yInterpolation + maxRadius : floor(yInterpolation + maxRadius));
+		int32_t zEnd   = static_cast<int32_t>(VERSION <= Version::Beta_1_5_02 ? zInterpolation + maxRadius : floor(zInterpolation + maxRadius));
 
 		for (int32_t x = xStart; x <= xEnd; ++x) {
 			double vectorX = static_cast<double>(x) + 0.5 - xInterpolation;
@@ -162,7 +162,7 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 					size_t xIndex = static_cast<size_t>(x - veinGenerationPoint.x - MAX_VEIN_DISPLACEMENT.first.x);
 					size_t yIndex = static_cast<size_t>(y - veinGenerationPoint.y - MAX_VEIN_DISPLACEMENT.first.y);
 					size_t zIndex = static_cast<size_t>(z - veinGenerationPoint.z - MAX_VEIN_DISPLACEMENT.first.z);
-					vein[yIndex][zIndex][xIndex] = VeinStates::Vein;
+					vein[yIndex][zIndex][xIndex] = VeinState::Vein;
 				}
 			}
 		}
@@ -174,11 +174,11 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_12_2
 
 
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_13(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_13(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinState::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -274,11 +274,11 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw_1_13(const
 }
 
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_13(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_13(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
 	if (!vein) throw std::invalid_argument("Null pointer provided for vein.\n");
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
-			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinStates::Background;
+			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) vein[y][z][x] = VeinState::Background;
 		}
 	}
 	std::unordered_set<Coordinate, CoordinateHashFunction> coordsSet;
@@ -366,26 +366,26 @@ std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned_1_13(c
 
 
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
-	return (VERSION <= Version::v1_10_through_v1_12_2 ? emulateVeinRaw_1_12_2_Minus : emulateVeinRaw_1_13)(chunk, random, vein, veinCoordinate);
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinRaw(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+	return (VERSION <= Version::v1_12_2 ? emulateVeinRaw_1_12_2_Minus : emulateVeinRaw_1_13)(chunk, random, vein, veinCoordinate);
 }
 
 
-std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned(const Pair<int32_t> &chunk, Random &random, VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
-	return (VERSION <= Version::v1_10_through_v1_12_2 ? emulateVeinCleaned_1_12_2_Minus : emulateVeinCleaned_1_13)(chunk, random, vein, veinCoordinate);
+std::unordered_set<Coordinate, CoordinateHashFunction> emulateVeinCleaned(const Pair<int32_t> &chunk, Random &random, VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], Coordinate &veinCoordinate) {
+	return (VERSION <= Version::v1_12_2 ? emulateVeinCleaned_1_12_2_Minus : emulateVeinCleaned_1_13)(chunk, random, vein, veinCoordinate);
 }
 
 
-void printVein(const VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], const Coordinate &veinCoordinate) {
+void printVein(const VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x], const Coordinate &veinCoordinate) {
 	printf("(%" PRId32 ", %" PRId32 ", %" PRId32 ")\n", veinCoordinate.x, veinCoordinate.y, veinCoordinate.z);
 	for (int32_t y = 0; y < MAX_VEIN_DIMENSIONS.y; ++y) {
 		for (int32_t z = 0; z < MAX_VEIN_DIMENSIONS.z; ++z) {
 			for (int32_t x = 0; x < MAX_VEIN_DIMENSIONS.x; ++x) {
 				switch (vein[y][z][x]) {
-					case VeinStates::Background:
+					case VeinState::Background:
 						printf("_");
 						break;
-					case VeinStates::Vein:
+					case VeinState::Vein:
 						printf("X");
 						break;
 					default: printf("?");
@@ -398,7 +398,7 @@ void printVein(const VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.
 }
 
 int main() {
-	VeinStates vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x];
+	VeinState vein[MAX_VEIN_DIMENSIONS.y][MAX_VEIN_DIMENSIONS.z][MAX_VEIN_DIMENSIONS.x];
 	Random random = Random().setState(INITIAL_INTERNAL_STATE);
 	Coordinate veinCoordinate;
 	std::unordered_set<Coordinate, CoordinateHashFunction> exactSet = emulateVeinRaw(ORIGIN_CHUNK, random, vein, veinCoordinate);

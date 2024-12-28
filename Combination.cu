@@ -1,4 +1,4 @@
-#include "src/Population Chunk Reversal Logic.cuh"
+#include "src/General/Population Chunk Reversal.cuh"
 #include <algorithm>
 #include <iterator>
 #include <set>
