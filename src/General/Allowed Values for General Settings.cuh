@@ -1,12 +1,6 @@
 #ifndef __GENERAL__ALLOWED_VALUES_FOR_SETTINGS_CUH
 #define __GENERAL__ALLOWED_VALUES_FOR_SETTINGS_CUH
 
-// The list of supported seedcracking tools.
-enum CrackerType {
-	Veins,
-	End_Pillars
-};
-
 // The list of all Java Edition versions.
 enum Version {
 	Rd_132211,
@@ -113,31 +107,6 @@ enum Version {
 	v1_19 , v1_19_1, v1_19_2, v1_19_3, v1_19_4,
 	v1_20 , v1_20_1, v1_20_2, v1_20_3, v1_20_4, v1_20_5, v1_20_6,
 	v1_21 , v1_21_1, v1_21_2, v1_21_3, v1_21_4,
-};
-
-enum Biome {
-	Default_or_Unknown
-};
-
-
-// The attributes that all input data must contain:
-struct InputData {
-	// The type of seedcracker to use
-	CrackerType type;
-	// The game version
-	Version version;
-};
-
-enum InputLayoutType {
-
-};
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/* WARNING: These are experimental features that don't work yet.*/
-
-enum ExperimentalBiome {
-	Badlands = Biome::Default_or_Unknown + 1, Mesa = Badlands,
-	Basalt_Deltas,
 };
 
 #endif

@@ -262,6 +262,13 @@ __host__ __device__ constexpr const char *getPlural(const T &val) noexcept {
 
 template <class T> struct Pair {
 	T first, second;
+
+	// From Stack Overflow
+	static struct Hash {
+		__host__ __device__ constexpr size_t operator()(const Pair<int32_t> &pair) const {
+			return (static_cast<size_t>(pair.first) << 32) + static_cast<size_t>(pair.second);
+		}
+	};
 };
 
 // A three-dimensional position in space.
@@ -281,7 +288,23 @@ struct Coordinate {
 	__host__ __device__ constexpr [[nodiscard]] bool operator==(const Coordinate &other) const noexcept {
 		return this->y == other.y && this->z == other.z && this->x == other.x;
 	}
+
+	// From Stack Overflow
+	static struct Hash {
+		__host__ __device__ constexpr size_t operator()(const Coordinate& coordinate) const {
+			return static_cast<size_t>(coordinate.x) * 17 + (static_cast<size_t>(coordinate.y) ^ static_cast<size_t>(coordinate.z));
+		}
+	};
 };
+
+constexpr bool [[nodiscard]] areBoundingBoxesAdjacent(const Pair<Coordinate> &boundingBox1, const Pair<Coordinate> &boundingBox2) {
+	return (boundingBox1.first.x <= boundingBox2.first.x && boundingBox2.first.x <= boundingBox1.second.x)
+		|| (boundingBox1.first.y <= boundingBox2.first.y && boundingBox2.first.y <= boundingBox1.second.y)
+		|| (boundingBox1.first.z <= boundingBox2.first.z && boundingBox2.first.z <= boundingBox1.second.z)
+		|| (boundingBox2.first.x <= boundingBox1.first.x && boundingBox1.first.x <= boundingBox2.second.x)
+		|| (boundingBox2.first.y <= boundingBox1.first.y && boundingBox1.first.y <= boundingBox2.second.y)
+		|| (boundingBox2.first.z <= boundingBox1.first.z && boundingBox1.first.z <= boundingBox2.second.z);
+}
 
 // An inclusive range of 32-bit integers.
 template <class T> struct InclusiveRange {

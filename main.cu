@@ -1,9 +1,6 @@
-#include "src/End Pillars/Filters.cuh"
 #include "src/Veins/Filters.cuh"
-#include <mutex>
+#include <thread>
 
-std::mutex mutex;
-uint64_t globalCurrentIteration = 0;
 
 void deviceManager(int32_t deviceIndex) {
 	TRY_CUDA(cudaSetDevice(deviceIndex));
@@ -11,12 +8,6 @@ void deviceManager(int32_t deviceIndex) {
 }
 
 int main() {
-	// file = fopen(FILEPATH, "a");
-	// if (!file) {
-	//     printf("ERROR: Filepath %s could not be opened.\n", FILEPATH);
-	//     exit(1);
-	// }
-
 	std::thread threads[NUMBER_OF_DEVICES];
 	time_t startTime = time(NULL), currentTime;
 	for (int32_t i = 0; i < NUMBER_OF_DEVICES; ++i) threads[i] = std::thread(deviceManager, i);
@@ -29,11 +20,9 @@ int main() {
 			time(&currentTime);
 			// Calculate estimated seconds until finishing
 			double eta = static_cast<double>(GLOBAL_ITERATIONS_NEEDED - globalCurrentIteration) * static_cast<double>(currentTime - startTime) / static_cast<double>(globalCurrentIteration);
-			fprintf(stderr, "(%" PRIu64 "/%" PRIu64 " states searched; ETA = %.2f seconds)\n", globalCurrentIteration*WORKERS_PER_DEVICE, GLOBAL_ITERATIONS_NEEDED*WORKERS_PER_DEVICE, eta);
+			fprintf(stderr, "(%" PRIu64 "/%" PRIu64 " chunks searched; ETA = %.2f seconds)\n", globalCurrentIteration*WORKERS_PER_DEVICE, TOTAL_CHUNKS, eta);
 			std::this_thread::sleep_for(STATUS_FREQUENCY);
 		}
 	}
-
-	// fclose(file);
 	return 0;
 }
